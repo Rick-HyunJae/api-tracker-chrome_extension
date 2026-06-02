@@ -1,0 +1,42 @@
+{
+	"permissions": {
+		"allow": [
+			"Bash(npm:*)",
+			"Bash(git:*)",
+			"Bash(code-review-graph:*)",
+			"Edit(.claude/skills/plan-ceo-review/SKILL.md)",
+			"Edit(.claude/skills/plan-design-review/SKILL.md)",
+			"Edit(.claude/skills/plan-eng-review/SKILL.md)",
+			"Edit(.claude/skills/plan-devex-review/SKILL.md)",
+			"Edit(.claude/skills/code-cso-review/SKILL.md)",
+			"Edit(.claude/skills/code-devex-review/SKILL.md)",
+			"Write(.claude/skills/_shared/review-operating-context.md)"
+		]
+	},
+	"hooks": {
+		"PostToolUse": [
+			{
+				"matcher": "Edit|Write|Bash",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph update --skip-flows --repo \"/Users/hyunjae/DOUZONE/Data-Visualization/Editor\" || true",
+						"timeout": 30
+					}
+				]
+			}
+		],
+		"SessionStart": [
+			{
+				"matcher": "",
+				"hooks": [
+					{
+						"type": "command",
+						"command": "git rev-parse --git-dir >/dev/null 2>&1 && code-review-graph status --repo \"/Users/hyunjae/DOUZONE/Data-Visualization/Editor\" || echo 'Not a git repo, skipping'",
+						"timeout": 10
+					}
+				]
+			}
+		]
+	}
+}

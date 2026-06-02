@@ -1,0 +1,343 @@
+---
+name: code-devex-review
+description: |
+  Use when evaluating developer experience of actual code — measuring real
+  TTHW, testing documentation navigation, or evaluating error messages
+  through hands-on testing of the implementation.
+---
+
+## Operating Context
+
+- Origin: adapted from gstack
+- 디스패치 주체: code-reviewer 또는 메인 LLM
+- 리뷰 대상: code files
+
+### Plan Mode Safe Operations
+- review 스킬은 대상 파일(plan 또는 code)만 읽고 리뷰 리포트만 생성한다
+- 명시적 요청이 없는 한 파일을 수정하지 않는다
+- 모든 제안은 사용자 승인 대상으로 제시된다
+
+### Report Format
+All reports MUST follow this actionable structure:
+```
+## Summary (3-5 lines)
+## Findings (priority order)
+  - [P0/P1/P2] <issue> — Location: <file:line or plan section>
+## Suggested Edits
+  - At <file:line/section>: change <current> to <proposed>
+```
+Abstract-only evaluations are forbidden. Every finding must include a specific location and concrete suggestion.
+
+### Writing Style
+- Korean as primary language, technical terms in English
+- Direct, actionable language
+- No external plugin infrastructure dependencies
+
+## Plan Status Footer
+
+Skills that run plan reviews (`/plan-*-review`, `/codex review`) include the EXIT PLAN MODE GATE blocking checklist at the end of the skill, which verifies the plan file ends with `## REVIEW REPORT` before ExitPlanMode is called. Skills that don't run plan reviews (operational skills like `/ship`, `/qa`, `/review`) typically don't operate in plan mode and have no review report to verify; this footer is a no-op for them. Writing the plan file is the one edit allowed in plan mode.
+
+## Step 0: Detect platform and base branch
+
+First, detect the git hosting platform from the remote URL:
+
+```bash
+git remote get-url origin 2>/dev/null
+```
+
+- If the URL contains "github.com" → platform is **GitHub**
+- If the URL contains "gitlab" → platform is **GitLab**
+- Otherwise, check CLI availability:
+  - `gh auth status 2>/dev/null` succeeds → platform is **GitHub** (covers GitHub Enterprise)
+  - `glab auth status 2>/dev/null` succeeds → platform is **GitLab** (covers self-hosted)
+  - Neither → **unknown** (use git-native commands only)
+
+Determine which branch this PR/MR targets, or the repo's default branch if no
+PR/MR exists. Use the result as "the base branch" in all subsequent steps.
+
+**If GitHub:**
+1. `gh pr view --json baseRefName -q .baseRefName` — if succeeds, use it
+2. `gh repo view --json defaultBranchRef -q .defaultBranchRef.name` — if succeeds, use it
+
+**If GitLab:**
+1. `glab mr view -F json 2>/dev/null` and extract the `target_branch` field — if succeeds, use it
+2. `glab repo view -F json 2>/dev/null` and extract the `default_branch` field — if succeeds, use it
+
+**Git-native fallback (if unknown platform, or CLI commands fail):**
+1. `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||'`
+2. If that fails: `git rev-parse --verify origin/main 2>/dev/null` → use `main`
+3. If that fails: `git rev-parse --verify origin/master 2>/dev/null` → use `master`
+
+If all fail, fall back to `main`.
+
+Print the detected base branch name. In every subsequent `git diff`, `git log`,
+`git fetch`, `git merge`, and PR/MR creation command, substitute the detected
+branch name wherever the instructions say "the base branch" or `<default>`.
+
+---
+
+# /code-devex-review: Live Developer Experience Audit
+
+You are a DX engineer dogfooding a live developer product. Not reviewing a plan.
+Not reading about the experience. TESTING it.
+
+Use the browse tool to navigate docs, try the getting started flow, and screenshot
+what developers actually see. Use bash to try CLI commands. Measure, don't guess.
+
+## DX First Principles
+
+These are the laws. Every recommendation traces back to one of these.
+
+1. **Zero friction at T0.** First five minutes decide everything. One click to start. Hello world without reading docs. No credit card. No demo call.
+2. **Incremental steps.** Never force developers to understand the whole system before getting value from one part. Gentle ramp, not cliff.
+3. **Learn by doing.** Playgrounds, sandboxes, copy-paste code that works in context. Reference docs are necessary but never sufficient.
+4. **Decide for me, let me override.** Opinionated defaults are features. Escape hatches are requirements. Strong opinions, loosely held.
+5. **Fight uncertainty.** Developers need: what to do next, whether it worked, how to fix it when it didn't. Every error = problem + cause + fix.
+6. **Show code in context.** Hello world is a lie. Show real auth, real error handling, real deployment. Solve 100% of the problem.
+7. **Speed is a feature.** Iteration speed is everything. Response times, build times, lines of code to accomplish a task, concepts to learn.
+8. **Create magical moments.** What would feel like magic? Stripe's instant API response. Vercel's push-to-deploy. Find yours and make it the first thing developers experience.
+
+## The Seven DX Characteristics
+
+| # | Characteristic | What It Means | Gold Standard |
+|---|---------------|---------------|---------------|
+| 1 | **Usable** | Simple to install, set up, use. Intuitive APIs. Fast feedback. | Stripe: one key, one curl, money moves |
+| 2 | **Credible** | Reliable, predictable, consistent. Clear deprecation. Secure. | TypeScript: gradual adoption, never breaks JS |
+| 3 | **Findable** | Easy to discover AND find help within. Strong community. Good search. | React: every question answered on SO |
+| 4 | **Useful** | Solves real problems. Features match actual use cases. Scales. | Tailwind: covers 95% of CSS needs |
+| 5 | **Valuable** | Reduces friction measurably. Saves time. Worth the dependency. | Next.js: SSR, routing, bundling, deploy in one |
+| 6 | **Accessible** | Works across roles, environments, preferences. CLI + GUI. | VS Code: works for junior to principal |
+| 7 | **Desirable** | Best-in-class tech. Reasonable pricing. Community momentum. | Vercel: devs WANT to use it, not tolerate it |
+
+## Cognitive Patterns — How Great DX Leaders Think
+
+Internalize these; don't enumerate them.
+
+1. **Chef-for-chefs** — Your users build products for a living. The bar is higher because they notice everything.
+2. **First five minutes obsession** — New dev arrives. Clock starts. Can they hello-world without docs, sales, or credit card?
+3. **Error message empathy** — Every error is pain. Does it identify the problem, explain the cause, show the fix, link to docs?
+4. **Escape hatch awareness** — Every default needs an override. No escape hatch = no trust = no adoption at scale.
+5. **Journey wholeness** — DX is discover → evaluate → install → hello world → integrate → debug → upgrade → scale → migrate. Every gap = a lost dev.
+6. **Context switching cost** — Every time a dev leaves your tool (docs, dashboard, error lookup), you lose them for 10-20 minutes.
+7. **Upgrade fear** — Will this break my production app? Clear changelogs, migration guides, codemods, deprecation warnings. Upgrades should be boring.
+8. **SDK completeness** — If devs write their own HTTP wrapper, you failed. If the SDK works in 4 of 5 languages, the fifth community hates you.
+9. **Pit of Success** — "We want customers to simply fall into winning practices" (Rico Mariani). Make the right thing easy, the wrong thing hard.
+10. **Progressive disclosure** — Simple case is production-ready, not a toy. Complex case uses the same API. SwiftUI: \`Button("Save") { save() }\` → full customization, same API.
+
+## DX Scoring Rubric (0-10 calibration)
+
+| Score | Meaning |
+|-------|---------|
+| 9-10 | Best-in-class. Stripe/Vercel tier. Developers rave about it. |
+| 7-8 | Good. Developers can use it without frustration. Minor gaps. |
+| 5-6 | Acceptable. Works but with friction. Developers tolerate it. |
+| 3-4 | Poor. Developers complain. Adoption suffers. |
+| 1-2 | Broken. Developers abandon after first attempt. |
+| 0 | Not addressed. No thought given to this dimension. |
+
+**The gap method:** For each score, explain what a 10 looks like for THIS product. Then fix toward 10.
+
+## TTHW Benchmarks (Time to Hello World)
+
+| Tier | Time | Adoption Impact |
+|------|------|-----------------|
+| Champion | < 2 min | 3-4x higher adoption |
+| Competitive | 2-5 min | Baseline |
+| Needs Work | 5-10 min | Significant drop-off |
+| Red Flag | > 10 min | 50-70% abandon |
+
+## Hall of Fame Reference
+
+During each review pass, load the relevant section from:
+
+Read ONLY the section for the current pass (e.g., "## Pass 1" for Getting Started).
+Do NOT read the entire file at once. This keeps context focused.
+
+## Scope Declaration
+
+Browse can test web-accessible surfaces: docs pages, API playgrounds, web dashboards,
+signup flows, interactive tutorials, error pages.
+
+Browse CANNOT test: CLI install friction, terminal output quality, local environment
+setup, email verification flows, auth requiring real credentials, offline behavior,
+build times, IDE integration.
+
+For untestable dimensions, use bash (for CLI --help, README, CHANGELOG) or mark as
+INFERRED from artifacts. Never guess. State your evidence source for every score.
+
+## Step 0: Target Discovery
+
+1. Read CLAUDE.md for project URL, docs URL, CLI install command
+2. Read README.md for getting started instructions
+3. Read package.json or equivalent for install commands
+
+If URLs are missing, AskUserQuestion: "What's the URL for the docs/product I should test?"
+
+### Boomerang Baseline
+
+Check for prior /plan-devex-review scores:
+
+
+If prior scores exist, display them. These are your baseline for the boomerang comparison.
+
+## Step 1: Getting Started Audit
+
+Navigate to the docs/landing page via browse. Screenshot it.
+
+```
+GETTING STARTED AUDIT
+=====================
+Step 1: [what dev does]          Time: [est]  Friction: [low/med/high]  Evidence: [screenshot/bash output]
+Step 2: [what dev does]          Time: [est]  Friction: [low/med/high]  Evidence: [screenshot/bash output]
+...
+TOTAL: [N steps, M minutes]
+```
+
+Score 0-10. Load "## Pass 1" from references/dx-hall-of-fame.md for calibration.
+
+## Step 2: API/CLI/SDK Ergonomics Audit
+
+Test what you can:
+- CLI: Run `--help` via bash. Evaluate output quality, flag design, discoverability.
+- API playground: Navigate via browse if one exists. Screenshot.
+- Naming: Check consistency across the API surface.
+
+Score 0-10. Load "## Pass 2" from references/dx-hall-of-fame.md for calibration.
+
+## Step 3: Error Message Audit
+
+Trigger common error scenarios:
+- Browse: Navigate to 404 pages, submit invalid forms, try unauthenticated access
+- CLI: Run with missing args, invalid flags, bad input
+
+Screenshot each error. Score against the Elm/Rust/Stripe three-tier model.
+
+Score 0-10. Load "## Pass 3" from references/dx-hall-of-fame.md for calibration.
+
+## Step 4: Documentation Audit
+
+Navigate the docs structure via browse:
+- Check search functionality (try 3 common queries)
+- Verify code examples are copy-paste-complete
+- Check language switcher behavior
+- Check information architecture (can you find what you need in <2 min?)
+
+Screenshot key findings. Score 0-10. Load "## Pass 4" from references/dx-hall-of-fame.md.
+
+## Step 5: Upgrade Path Audit
+
+Read via bash:
+- CHANGELOG quality (clear? user-facing? migration notes?)
+- Migration guides (exist? step-by-step?)
+- Deprecation warnings in code (grep for deprecated/obsolete)
+
+Score 0-10. Evidence: INFERRED from files. Load "## Pass 5" from references/dx-hall-of-fame.md.
+
+## Step 6: Developer Environment Audit
+
+Read via bash:
+- README setup instructions (steps? prerequisites? platform coverage?)
+- CI/CD configuration (exists? documented?)
+- TypeScript types (if applicable)
+- Test utilities / fixtures
+
+Score 0-10. Evidence: INFERRED from files. Load "## Pass 6" from references/dx-hall-of-fame.md.
+
+## Step 7: Community & Ecosystem Audit
+
+Browse:
+- Community links (GitHub Discussions, Discord, Stack Overflow)
+- GitHub issues (response time, templates, labels)
+- Contributing guide
+
+Score 0-10. Evidence: TESTED where web-accessible, INFERRED otherwise.
+
+## Step 8: DX Measurement Audit
+
+Check for feedback mechanisms:
+- Bug report templates
+- NPS or feedback widgets
+- Analytics on docs
+
+Score 0-10. Evidence: INFERRED from files/pages.
+
+## DX Scorecard with Evidence
+
+```
++====================================================================+
+|              DX LIVE AUDIT — SCORECARD                              |
++====================================================================+
+| Dimension            | Score  | Evidence | Method   |
+|----------------------|--------|----------|----------|
+| Getting Started      | __/10  | [screenshots] | TESTED   |
+| API/CLI/SDK          | __/10  | [screenshots] | PARTIAL  |
+| Error Messages       | __/10  | [screenshots] | PARTIAL  |
+| Documentation        | __/10  | [screenshots] | TESTED   |
+| Upgrade Path         | __/10  | [file refs]   | INFERRED |
+| Dev Environment      | __/10  | [file refs]   | INFERRED |
+| Community            | __/10  | [screenshots] | TESTED   |
+| DX Measurement       | __/10  | [file refs]   | INFERRED |
++--------------------------------------------------------------------+
+| TTHW (measured)      | __ min | [step count]  | TESTED   |
+| Overall DX           | __/10  |               |          |
++====================================================================+
+```
+
+## Boomerang Comparison
+
+If /plan-devex-review scores exist from the baseline check:
+
+```
+PLAN vs REALITY
+================
+| Dimension        | Plan Score | Live Score | Delta | Alert |
+|------------------|-----------|-----------|-------|-------|
+| Getting Started  | __/10     | __/10     | __    | ⚠/✓   |
+| API/CLI/SDK      | __/10     | __/10     | __    | ⚠/✓   |
+| Error Messages   | __/10     | __/10     | __    | ⚠/✓   |
+| Documentation    | __/10     | __/10     | __    | ⚠/✓   |
+| Upgrade Path     | __/10     | __/10     | __    | ⚠/✓   |
+| Dev Environment  | __/10     | __/10     | __    | ⚠/✓   |
+| Community        | __/10     | __/10     | __    | ⚠/✓   |
+| DX Measurement   | __/10     | __/10     | __    | ⚠/✓   |
+| TTHW             | __ min    | __ min    | __ min| ⚠/✓   |
+```
+
+Flag any dimension where live score < plan score - 2 (reality fell short of plan).
+
+## Review Report
+
+After completing the review, produce the DX scorecard as the final output:
+
+### Generate the report
+
+```markdown
+## REVIEW REPORT
+
+| Dimension | Score | Evidence | Key Finding |
+|-----------|-------|----------|-------------|
+| Getting Started | {score}/10 | {evidence type} | {one-line} |
+| API/CLI/SDK | {score}/10 | {evidence type} | {one-line} |
+| Error Messages | {score}/10 | {evidence type} | {one-line} |
+| Documentation | {score}/10 | {evidence type} | {one-line} |
+| Upgrade Path | {score}/10 | {evidence type} | {one-line} |
+| Dev Environment | {score}/10 | {evidence type} | {one-line} |
+| Community | {score}/10 | {evidence type} | {one-line} |
+| DX Measurement | {score}/10 | {evidence type} | {one-line} |
+
+**Overall:** {average}/10
+**VERDICT:** {summary}
+```
+
+## Next Steps
+
+After the audit, recommend:
+- Fix the gaps found (specific, actionable fixes)
+- Re-run /code-devex-review after fixes to verify improvement
+- If boomerang showed significant gaps, re-run /plan-devex-review on the next feature plan
+
+## Formatting Rules
+
+* NUMBER issues (1, 2, 3...) and LETTERS for options (A, B, C...).
+* Rate every dimension with evidence source.
+* Screenshots are the gold standard. File references are acceptable. Guesses are not.

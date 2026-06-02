@@ -1,0 +1,34 @@
+:root {
+  --accent: oklch(0.74 0.075 210);
+  --accent-dim: oklch(0.74 0.075 210 / 0.14);
+  --accent-ink: oklch(0.20 0.02 235);
+
+  --bg: oklch(0.165 0.012 260);
+  --canvas: oklch(0.12 0.012 260);
+  --surface: oklch(0.205 0.012 262);
+  --surface-2: oklch(0.235 0.013 262);
+  --surface-hi: oklch(0.27 0.015 262);
+  --border: oklch(0.31 0.014 262);
+  --border-soft: oklch(0.27 0.012 262);
+
+  --text: oklch(0.96 0.004 260);
+  --text-2: oklch(0.74 0.01 260);
+  --text-3: oklch(0.56 0.012 260);
+
+  --m-get: oklch(0.76 0.085 158);
+  --m-post: oklch(0.72 0.075 248);
+  --m-put: oklch(0.79 0.075 82);
+  --m-del: oklch(0.68 0.10 28);
+  --m-patch: oklch(0.72 0.085 305);
+
+  --ok: oklch(0.76 0.085 158);
+  --warn: oklch(0.79 0.075 82);
+  --err: oklch(0.68 0.10 28);
+  --rec: oklch(0.67 0.115 30);
+
+  --ui: "Space Grotesk", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --r: 10px;
+  --r-sm: 7px;
+}

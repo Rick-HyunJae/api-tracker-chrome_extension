@@ -1,0 +1,35 @@
+{
+  "manifest_version": 3,
+  "name": "API-to-MCP Tracker",
+  "version": "0.1.0",
+  "description": "Capture REST API calls and turn captured sessions into MCP servers.",
+  "permissions": ["storage", "alarms", "sidePanel", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "src/background/index.ts",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "API-to-MCP Tracker"
+  },
+  "side_panel": {
+    "default_path": "public/sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content-bridge.ts", "src/content/widget-host.ts"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["assets/injected-capture*.js"],
+      "matches": ["<all_urls>"]
+    },
+    {
+      "resources": ["fonts/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

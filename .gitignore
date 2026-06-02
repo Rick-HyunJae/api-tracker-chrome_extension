@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.log
+.superpowers/
+.DS_Store
+.claude/settings.local.json
+.worktrees/
+.serena/
+.playwright-mcp/
+dist.zip
