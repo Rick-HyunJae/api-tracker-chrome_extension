@@ -60,7 +60,7 @@ export function ListView(props: ListViewProps): React.ReactElement {
           className="icon-btn"
           title="전체 삭제"
           onClick={props.onClear}
-          disabled={!calls.length}
+          disabled={!calls.length || sending}
           style={{ opacity: calls.length ? 1 : 0.4 }}
         >
           <Trash size={16} />
@@ -83,7 +83,7 @@ export function ListView(props: ListViewProps): React.ReactElement {
             aria-label="전체 선택"
             checked={calls.length > 0 && props.selectedCount === calls.length}
             onChange={props.onToggleAll}
-            disabled={!calls.length}
+            disabled={!calls.length || sending}
           />
           전체 선택
         </label>
@@ -146,7 +146,7 @@ export function ListView(props: ListViewProps): React.ReactElement {
         <button className="btn btn-primary" disabled={!props.selectedCount || sending} onClick={props.onGoSend}>
           {sending ? '전송 중…' : <><Send size={16} /> 서버로 전송 <span className="pill">{props.selectedCount}</span></>}
         </button>
-        <button className="btn btn-ghost" title="전체 삭제" onClick={props.onClear} disabled={!calls.length}>
+        <button className="btn btn-ghost" title="전체 삭제" onClick={props.onClear} disabled={!calls.length || sending}>
           <Trash size={16} />
         </button>
       </div>

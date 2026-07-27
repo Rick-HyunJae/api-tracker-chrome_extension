@@ -152,6 +152,13 @@ export async function handleMessage(
       if (calls.length === current.calls.length) return { state }
       return { state: { ...state, currentSession: { ...current, calls } } }
     }
+    case MSG.CLEAR_SESSION: {
+      // 패널의 직접 patchStorage는 write-lock을 우회해 진행 중 전송의 늦은 쓰기가
+      // 삭제를 되살릴 수 있다(lost update). 전체 삭제도 큐를 태운다.
+      const current = state.currentSession
+      if (!current || current.calls.length === 0) return { state }
+      return { state: { ...state, currentSession: { ...current, calls: [] } } }
+    }
     default:
       return { state }
   }

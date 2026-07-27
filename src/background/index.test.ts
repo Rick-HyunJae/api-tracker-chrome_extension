@@ -352,6 +352,24 @@ describe('background message router', () => {
     )
     expect(next.state.currentSession!.calls).toHaveLength(1)
   })
+
+  it('CLEAR_SESSION empties the current session calls', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a'), makeCall('b')], status: 'recording',
+      },
+    }
+    const next = await handleMessage(state, { type: MSG.CLEAR_SESSION }, 'https://x/a', ctx)
+    expect(next.state.currentSession!.calls).toEqual([])
+    expect(next.state.currentSession!.sessionId).toBe('cur') // 세션 경계는 유지
+  })
+
+  it('CLEAR_SESSION is a no-op without a session or calls', async () => {
+    const empty = await handleMessage(DEFAULT_STORAGE, { type: MSG.CLEAR_SESSION }, 'https://x/a', ctx)
+    expect(empty.state).toBe(DEFAULT_STORAGE)
+  })
 })
 
 function emitter() {

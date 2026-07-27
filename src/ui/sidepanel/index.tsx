@@ -76,7 +76,8 @@ export function Panel(): React.ReactElement {
   const onClear = (): void => {
     if (!session) return
     setSelectedId(null)
-    void patchStorage({ currentSession: { ...session, calls: [] } })
+    setExcludedIds(new Set()) // 남은 제외 표시는 삭제 후 무의미 — 함께 초기화
+    void chrome.runtime.sendMessage({ type: MSG.CLEAR_SESSION })
   }
   const onToggleExclude = (id: string): void => {
     setExcludedIds((prev) => {

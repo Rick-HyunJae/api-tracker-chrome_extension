@@ -9,6 +9,7 @@ describe('message constants', () => {
     expect(MSG.SEND_SESSION).toBe('SEND_SESSION')
     expect(MSG.TOGGLE_TRACKING).toBe('TOGGLE_TRACKING')
     expect(MSG.OPEN_SIDEPANEL).toBe('OPEN_SIDEPANEL')
+    expect(MSG.CLEAR_SESSION).toBe('CLEAR_SESSION')
   })
 
   it('defines a stable postMessage source tag', () => {

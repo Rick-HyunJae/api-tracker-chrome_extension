@@ -93,5 +93,9 @@ describe('ListView', () => {
     render(<ListView {...base} calls={[call()]} sending={true} />)
     expect(screen.getByRole('checkbox', { name: '전송 대상' })).toBeDisabled()
     expect(screen.getByTitle('이 호출 삭제')).toBeDisabled()
+    expect(screen.getByRole('checkbox', { name: '전체 선택' })).toBeDisabled()
+    for (const btn of screen.getAllByTitle('전체 삭제')) {
+      expect(btn).toBeDisabled()
+    }
   })
 })

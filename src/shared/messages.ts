@@ -8,6 +8,7 @@ export const MSG = {
   SEND_SESSION: 'SEND_SESSION',
   SEND_CURRENT_SESSION: 'SEND_CURRENT_SESSION',
   DELETE_CALL: 'DELETE_CALL',
+  CLEAR_SESSION: 'CLEAR_SESSION',
   TOGGLE_TRACKING: 'TOGGLE_TRACKING',
   OPEN_SIDEPANEL: 'OPEN_SIDEPANEL',
 } as const
@@ -43,6 +44,10 @@ export interface DeleteCallMessage {
   callId: string
 }
 
+export interface ClearSessionMessage {
+  type: typeof MSG.CLEAR_SESSION
+}
+
 export interface ToggleTrackingMessage {
   type: typeof MSG.TOGGLE_TRACKING
   enabled: boolean
@@ -58,6 +63,7 @@ export type RuntimeMessage =
   | SendSessionMessage
   | SendCurrentSessionMessage
   | DeleteCallMessage
+  | ClearSessionMessage
   | ToggleTrackingMessage
   | OpenSidePanelMessage
 

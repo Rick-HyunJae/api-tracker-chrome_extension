@@ -91,6 +91,13 @@ describe('Panel', () => {
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: MSG.DELETE_CALL, callId: 'c1' })
   })
 
+  it('routes clear-all through the background queue', async () => {
+    render(<Panel />)
+    await waitFor(() => screen.getByText('/v1/users'))
+    fireEvent.click(screen.getAllByTitle('전체 삭제')[0])
+    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({ type: MSG.CLEAR_SESSION })
+  })
+
   it('failure toast does not carry the ok class and shows the error icon', async () => {
     ;(chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: false, error: 'timeout' })
     render(<Panel />)
