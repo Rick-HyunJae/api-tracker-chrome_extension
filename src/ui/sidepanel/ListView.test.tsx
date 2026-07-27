@@ -88,4 +88,10 @@ describe('ListView', () => {
     rerender(<ListView {...base} calls={[call()]} selectedCount={0} />)
     expect(screen.getByRole('button', { name: /서버로 전송/ })).toBeDisabled()
   })
+
+  it('disables the row checkbox and delete button while sending', () => {
+    render(<ListView {...base} calls={[call()]} sending={true} />)
+    expect(screen.getByRole('checkbox', { name: '전송 대상' })).toBeDisabled()
+    expect(screen.getByTitle('이 호출 삭제')).toBeDisabled()
+  })
 })

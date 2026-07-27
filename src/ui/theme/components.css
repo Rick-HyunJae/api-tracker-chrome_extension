@@ -158,9 +158,9 @@ pre.code { margin: 0; padding: 12px 13px; font-family: var(--mono); font-size: 1
 .entry-row .entry { flex: 1; min-width: 0; }
 .entry-check { flex: none; align-self: center; }
 .entry-del {
-  flex: none; align-self: center; display: none;
+  flex: none; align-self: center; opacity: 0; pointer-events: none;
   background: none; border: none; color: var(--text-3); cursor: pointer;
   padding: 4px; border-radius: 6px;
 }
-.entry-row:hover .entry-del { display: inline-flex; }
+.entry-row:hover .entry-del, .entry-row:focus-within .entry-del { opacity: 1; pointer-events: auto; }
 .entry-del:hover { color: var(--rec); background: var(--surface-2); }

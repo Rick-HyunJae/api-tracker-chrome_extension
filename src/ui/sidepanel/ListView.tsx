@@ -107,6 +107,7 @@ export function ListView(props: ListViewProps): React.ReactElement {
                   aria-label="전송 대상"
                   checked={!props.excludedIds.has(c.id)}
                   onChange={() => props.onToggleExclude(c.id)}
+                  disabled={sending}
                 />
                 <button
                   className={'entry' + (c.id === freshId ? ' fresh' : '')}
@@ -131,6 +132,7 @@ export function ListView(props: ListViewProps): React.ReactElement {
                   className="entry-del"
                   title="이 호출 삭제"
                   onClick={() => props.onDelete(c.id)}
+                  disabled={sending}
                 >
                   <Trash size={13} />
                 </button>
