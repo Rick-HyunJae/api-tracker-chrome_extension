@@ -4,10 +4,12 @@ import { sizeOf } from './view-utils'
 import { Cloud, Send } from './icons'
 
 interface SendViewProps {
-  calls: ApiCall[]
+  calls: ApiCall[] // 선택된(전송 대상) 호출만 전달된다
   settings: Settings
   sending: boolean
-  progress: number
+  name: string
+  namePlaceholder: string
+  onName: (v: string) => void
   onSend: () => void
 }
 
@@ -15,7 +17,7 @@ const methodVar: Record<string, string> = {
   GET: 'get', POST: 'post', PUT: 'put', PATCH: 'patch', DELETE: 'del',
 }
 
-export function SendView({ calls, settings, sending, progress, onSend }: SendViewProps): React.ReactElement {
+export function SendView({ calls, settings, sending, name, namePlaceholder, onName, onSend }: SendViewProps): React.ReactElement {
   const byMethod = calls.reduce<Record<string, number>>((a, e) => {
     a[e.method] = (a[e.method] ?? 0) + 1
     return a
@@ -31,11 +33,22 @@ export function SendView({ calls, settings, sending, progress, onSend }: SendVie
       <div className="scroll">
         <div className="settings">
           <div className="set-group">
+            <h3>세션 이름</h3>
+            <input
+              className="name-input"
+              type="text"
+              value={name}
+              placeholder={namePlaceholder}
+              onChange={(e) => onName(e.target.value)}
+            />
+          </div>
+
+          <div className="set-group">
             <h3>업로드 요약</h3>
             <div style={{ display: 'flex', gap: 8 }}>
               <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 10, padding: '13px 14px' }}>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 26, fontWeight: 600 }}>{calls.length}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>수집 건수</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>선택 건수</div>
               </div>
               <div style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border-soft)', borderRadius: 10, padding: '13px 14px' }}>
                 <div style={{ fontFamily: 'var(--mono)', fontSize: 26, fontWeight: 600 }}>{(totalBytes / 1024).toFixed(1)}<span style={{ fontSize: 13, color: 'var(--text-3)' }}>KB</span></div>
@@ -68,13 +81,9 @@ export function SendView({ calls, settings, sending, progress, onSend }: SendVie
         </div>
       </div>
       <div className="pfoot" style={{ flexDirection: 'column', gap: 9, alignItems: 'stretch' }}>
-        {sending && (
-          <div style={{ height: 5, borderRadius: 5, background: 'var(--surface-2)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: progress + '%', background: 'var(--accent)', borderRadius: 5, transition: 'width .2s' }} />
-          </div>
-        )}
+        {sending && <div className="progress-indet" role="progressbar" aria-label="업로드 진행 중" />}
         <button className="btn btn-primary" disabled={!calls.length || sending} onClick={onSend} style={{ height: 44 }}>
-          {sending ? `업로드 중… ${progress}%` : <><Send size={16} /> {calls.length}건 전송</>}
+          {sending ? '업로드 중…' : <><Send size={16} /> 선택 {calls.length}건 전송</>}
         </button>
       </div>
     </div>
