@@ -13,18 +13,22 @@
 - **자동 캡처 (Auto-capture)** — 페이지의 `fetch`와 `XHR`를 메인 월드에서 패치해, 추적이 켜져 있으면 페이지 로드 즉시 모든 API 호출을 기록합니다.
 - **Floating Widget** — 페이지 우하단에 떠 있는 위젯(Shadow DOM 격리). 추적 중일 때 파란색으로 표시되고, 캡처된 호출 수를 배지로 보여줍니다. 클릭하면 사이드패널을 엽니다.
 - **SidePanel** — Chrome 사이드패널 기반 UI. 네 개의 뷰로 구성됩니다.
-  - `List` — 캡처된 호출 목록 (method/status/duration, 검색·실시간 하이라이트·전체 삭제)
-  - `Detail` — 선택한 호출의 요청/응답 상세 (헤더·바디, 복사 버튼)
-  - `Send` — 현재 세션을 서버로 전송 (`N개 호출 전송`)
-  - `Settings` — 서버 URL/API Key, 캡처 옵션 설정
-- **세션 모델 (Session)** — 캡처는 하나의 세션에 누적됩니다. URL이 바뀌어도(SPA 이동·전체 페이지 이동) 세션은 끊기지 않으며, **30분 idle 타임아웃** 또는 추적 토글로만 세션 경계가 결정됩니다. idle이 지나면 세션은 히스토리로 회전(rotate)되어 `pending` 상태로 보관됩니다.
+  - `List` — 캡처된 호출 목록 (method/status/duration, 검색·실시간 하이라이트).
+    행별 **체크박스로 전송 대상을 선택**(기본 전체 선택, 전체 선택/해제 바)하고,
+    행 hover/포커스 시 **개별 삭제** 버튼이 나타납니다. 전체 삭제도 지원.
+  - `Detail` — 선택한 호출의 요청/응답 상세 (헤더·바디, 본문/URL/cURL 복사 버튼)
+  - `Send` — **세션 이름을 지정**(선택사항)하고 체크된 호출만 서버로 전송 (`선택 N건 전송`).
+    요약 카드(건수·페이로드·메서드 분포)는 선택분 기준으로 표시됩니다.
+  - `Settings` — 서버 URL/API Key, 캡처 옵션 설정 (입력 즉시 자동 저장)
+- **세션 모델 (Session)** — 캡처는 하나의 세션에 누적됩니다. URL이 바뀌어도(SPA 이동·전체 페이지 이동) 세션은 끊기지 않으며, **30분 idle 타임아웃**, 추적 토글, 그리고 **수동 전송**으로 세션 경계가 결정됩니다. idle이 지나면 세션은 히스토리로 회전(rotate)되어 `pending` 상태로 보관됩니다.
+- **체리픽 전송 (Cherry-pick send)** — List에서 체크한 호출만 이름과 함께 전송·아카이브되고, **체크 해제한 호출은 새 세션에 그대로 남아** 이어서 수집·전송할 수 있습니다.
 - **캡처 필터 (Capture filters)** — 설정으로 캡처 대상을 정밀 제어합니다.
   - `domainWhitelist` / `blacklistedDomains` — 도메인 화이트리스트·블랙리스트
   - `captureMethods` — 기록할 HTTP 메서드 (기본 GET/POST/PUT/PATCH/DELETE)
   - `saveBody` — 응답 바디 저장 여부
   - `dedupe` — 중복 호출 제거
   - `autoSend` — 캡처 즉시 자동 전송
-- **자동/수동 전송 (Send)** — 세션을 백엔드로 전송하면 응답으로 받은 MCP 서버 목록이 `mcpList`에 병합됩니다. 전송 실패한 세션은 `failed`로 표시되고 재전송할 수 있습니다.
+- **자동/수동 전송 (Send)** — 세션을 백엔드로 전송하면(`POST {serverUrl}/api/sessions`, 페이로드에 `name` 포함) 응답으로 받은 MCP 서버 목록이 `mcpList`에 병합됩니다. 전송 실패한 세션은 `failed`로 보관됩니다(재전송 UI는 히스토리 뷰와 함께 예정).
 - **복원력 (Resilience)** — 모든 상태는 `chrome.storage.local`에 영속됩니다. 서비스 워커가 재시작돼도 `currentSession`이 복구되고, 동시 캡처로 인한 쓰기 경쟁은 write-lock으로 직렬화됩니다.
 
 ---
@@ -46,7 +50,7 @@ injected-capture  ──postMessage──▶ content-bridge ──runtime──�
                                                           chrome.storage.local  ──onStorageChanged──▶ 구독·렌더
 ```
 
-1. **injected-capture** — 페이지 메인 월드에서 `fetch`/`XHR`를 패치해 요청/응답을 가로챕니다.
+1. **injected-capture** — 페이지 메인 월드에서 `fetch`/`XHR`를 패치해 요청/응답을 가로챕니다. 상대경로 URL은 **캡처 시점에 절대화**되어 하류의 화이트리스트 매칭·dedupe·표기가 일관되게 동작합니다.
 2. **content-bridge** — `postMessage`로 받은 캡처 데이터를 `chrome.runtime` 메시지로 서비스 워커에 전달합니다.
 3. **background/index (`handleMessage`)** — 메시지 라우터. `trackingEnabled`이면 `appendCall`로 세션에 누적하고, `autoSend` 조건이면 곧바로 전송까지 수행합니다.
 4. **session-manager (`appendCall` / `rotateSession`)** — 캡처 필터(화이트/블랙리스트, 메서드, dedupe, saveBody)를 적용하고, idle 타임아웃에 따라 세션을 회전합니다.
@@ -106,6 +110,8 @@ npm run build          # tsc --noEmit && vite build → dist/ 산출
 
 > 개발 중에는 `npm run dev`로 Vite 개발 서버를 띄울 수 있습니다(HMR).
 
+스크린샷과 함께 보는 사용자용 가이드: [docs/handoff/2026-07-28-extension-usage.md](docs/handoff/2026-07-28-extension-usage.md)
+
 ---
 
 ## Development & Testing
@@ -137,11 +143,11 @@ npx tsc --noEmit                          # 타입체크 (build에 포함)
    > MVP에는 별도 동의 단계가 없습니다. `trackingEnabled`(기본 ON)이면 페이지 로드 즉시 캡처가 시작됩니다.
 3. API 호출을 발생시킨다. 위젯의 배지 카운트가 증가하는지 확인한다.
 4. 위젯 → **패널 열기**를 누른다. 사이드패널 `List`에 method/status/duration이 표시되는지, 행을 누르면 `Detail`에서 응답 바디가 펼쳐지는지 확인한다.
-5. **이 세션 전송(N개 호출)** 을 누른다. 성공 토스트가 뜨고, MCP 서버 목록이 새로고침 없이(`onStorageChanged` 기반) 갱신되는지 확인한다.
+5. `List`에서 일부 호출의 체크를 해제하고 **전송** 탭으로 이동한다. 세션 이름을 입력하고 **선택 N건 전송**을 누른다. 성공 토스트가 뜨고, 체크했던 호출만 이름과 함께 서버로 전송되며, 체크 해제한 호출은 List에 그대로 남는지 확인한다.
 6. SPA 내부에서 이동(pushState)한다. 세션이 끊기지 않고 같은 세션에 계속 누적되는지 확인한다.
 7. Settings에서 현재 도메인을 블랙리스트에 추가하고 새로고침한다. 위젯이 **나타나지 않고** 아무 호출도 캡처되지 않는지 확인한다.
 8. 30분 이상 API 호출을 멈춘다(또는 idle alarm 트리거). 세션이 히스토리로 회전해 `pending` 상태가 되는지 확인한다.
-9. 세션 기록에서 `failed` 세션을 찾아 **재전송**한다. 재시도되는지 확인한다.
+9. 전송 실패를 유도(서버 중지 후 전송)한다. 실패 토스트(X 아이콘)가 뜨고 세션이 `failed`로 보관되는지 확인한다. (재전송 UI는 히스토리 뷰와 함께 예정 — storage의 `sessions[].transmitStatus`로 확인)
 10. 서비스 워커를 reload 한다(`chrome://extensions` → reload). `currentSession`이 storage에서 복구되는지 확인한다.
 
 ---
