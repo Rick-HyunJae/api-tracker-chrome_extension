@@ -68,3 +68,6 @@ export const Cloud = (p: IcProps): React.ReactElement => (
 export const Clock = (p: IcProps): React.ReactElement => (
   <Svg {...p}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></Svg>
 )
+export const X = (p: IcProps): React.ReactElement => (
+  <Svg {...p}><path d="M6 6l12 12" /><path d="M18 6L6 18" /></Svg>
+)

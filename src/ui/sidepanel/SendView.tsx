@@ -40,6 +40,7 @@ export function SendView({ calls, settings, sending, name, namePlaceholder, onNa
               value={name}
               placeholder={namePlaceholder}
               onChange={(e) => onName(e.target.value)}
+              disabled={sending}
             />
           </div>
 

@@ -45,5 +45,6 @@ describe('SendView', () => {
     render(<SendView {...base} calls={[call('GET')]} sending={true} />)
     expect(screen.getByRole('progressbar')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /업로드 중/ })).toBeDisabled()
+    expect(screen.getByPlaceholderText('x · 7/28 세션')).toBeDisabled()
   })
 })
