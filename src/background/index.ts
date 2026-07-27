@@ -1,7 +1,7 @@
 import { getStorage, patchStorage } from '../shared/storage'
 import { MSG } from '../shared/messages'
 import type { RuntimeMessage, SendSessionResponse } from '../shared/messages'
-import { appendCall, rotateSession, shouldAutoSend, IDLE_TIMEOUT_MS } from './session-manager'
+import { appendCall, rotateSession, splitAndArchive, shouldAutoSend, IDLE_TIMEOUT_MS } from './session-manager'
 import { sendSession as defaultSendSession, mergeMcpList } from './sender'
 import type { SendResult } from './sender'
 import type { Settings, StorageSchema, StoredSession } from '../shared/types'
@@ -73,6 +73,26 @@ export interface RouterResult {
   response?: SendSessionResponse
 }
 
+// Sends sessions[idx] and folds the result back into state: sent + mcpList
+// merge on success, failed on error. Shared by SEND_SESSION,
+// SEND_CURRENT_SESSION and the auto-send path.
+async function sendArchivedAt(
+  state: StorageSchema,
+  idx: number,
+  ctx: RouterCtx,
+): Promise<RouterResult> {
+  const send = ctx.sendSession ?? defaultSendSession
+  const result = await send(state.settings, state.sessions[idx])
+  const sessions = state.sessions.slice()
+  if (result.ok) {
+    sessions[idx] = { ...sessions[idx], transmitStatus: 'sent', sentAt: ctx.now() }
+    const mcpList = mergeMcpList(state.mcpList, result.mcpServers ?? [])
+    return { state: { ...state, sessions, mcpList }, response: { ok: true } }
+  }
+  sessions[idx] = { ...sessions[idx], transmitStatus: 'failed' }
+  return { state: { ...state, sessions }, response: { ok: false, error: result.error } }
+}
+
 export async function handleMessage(
   state: StorageSchema,
   msg: RuntimeMessage,
@@ -91,17 +111,8 @@ export async function handleMessage(
 
       // Auto-send: archive the full current session, then upload it.
       const archived = rotateSession(next, next.currentSession?.url ?? '', ctx.now())
-      const idx = archived.sessions.length - 1
-      const send = ctx.sendSession ?? defaultSendSession
-      const result = await send(archived.settings, archived.sessions[idx])
-      const sessions = archived.sessions.slice()
-      if (result.ok) {
-        sessions[idx] = { ...sessions[idx], transmitStatus: 'sent', sentAt: ctx.now() }
-        const mcpList = mergeMcpList(archived.mcpList, result.mcpServers ?? [])
-        return { state: { ...archived, sessions, mcpList } }
-      }
-      sessions[idx] = { ...sessions[idx], transmitStatus: 'failed' }
-      return { state: { ...archived, sessions } }
+      const { state: sent } = await sendArchivedAt(archived, archived.sessions.length - 1, ctx)
+      return { state: sent }
     }
     case MSG.SESSION_CHANGE: {
       // URL 변경은 더 이상 세션을 끊지 않는다. 추적 중에는 SPA 이동·전체 페이지
@@ -118,16 +129,21 @@ export async function handleMessage(
     case MSG.SEND_SESSION: {
       const idx = state.sessions.findIndex((s) => s.sessionId === msg.sessionId)
       if (idx === -1) return { state, response: { ok: false, error: 'session not found' } }
-      const send = ctx.sendSession ?? defaultSendSession
-      const result = await send(state.settings, state.sessions[idx])
-      const sessions = state.sessions.slice()
-      if (result.ok) {
-        sessions[idx] = { ...sessions[idx], transmitStatus: 'sent', sentAt: ctx.now() }
-        const mcpList = mergeMcpList(state.mcpList, result.mcpServers ?? [])
-        return { state: { ...state, sessions, mcpList }, response: { ok: true } }
-      }
-      sessions[idx] = { ...sessions[idx], transmitStatus: 'failed' }
-      return { state: { ...state, sessions }, response: { ok: false, error: result.error } }
+      return sendArchivedAt(state, idx, ctx)
+    }
+    case MSG.SEND_CURRENT_SESSION: {
+      // Cherry-pick manual send: archive ONLY the selected calls (with the
+      // user-given name), keep the rest in a fresh current session, then send.
+      const split = splitAndArchive(state, msg.callIds, msg.name, ctx.now())
+      if (split === state) return { state, response: { ok: false, error: 'no calls selected' } }
+      return sendArchivedAt(split, split.sessions.length - 1, ctx)
+    }
+    case MSG.DELETE_CALL: {
+      const current = state.currentSession
+      if (!current) return { state }
+      const calls = current.calls.filter((c) => c.id !== msg.callId)
+      if (calls.length === current.calls.length) return { state }
+      return { state: { ...state, currentSession: { ...current, calls } } }
     }
     default:
       return { state }

@@ -234,6 +234,102 @@ describe('background message router', () => {
     expect(next.state.sessions[0].transmitStatus).toBe('failed')
     expect(next.state.sessions[0].calls).toHaveLength(50) // 49 + the 50th capture, not lost
   })
+
+  it('SEND_CURRENT_SESSION archives selected calls, sends them, keeps the rest', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a'), makeCall('b'), makeCall('c')], status: 'recording',
+      },
+    }
+    const sendImpl = vi.fn().mockResolvedValue({ ok: true, mcpServers: [] })
+    const next = await handleMessage(
+      state,
+      { type: MSG.SEND_CURRENT_SESSION, name: '내 세션', callIds: ['a', 'c'] },
+      'https://x/a',
+      { ...ctx, sendSession: sendImpl },
+    )
+    expect(sendImpl).toHaveBeenCalledOnce()
+    // sender가 받은 세션은 선택분만 + 이름 포함
+    const sentSession = sendImpl.mock.calls[0][1]
+    expect(sentSession.calls.map((c: ApiCall) => c.id)).toEqual(['a', 'c'])
+    expect(sentSession.name).toBe('내 세션')
+    // 아카이브는 sent, 미선택분은 새 현재 세션에 잔류
+    expect(next.state.sessions).toHaveLength(1)
+    expect(next.state.sessions[0].transmitStatus).toBe('sent')
+    expect(next.state.currentSession!.calls.map((c) => c.id)).toEqual(['b'])
+    expect(next.state.currentSession!.sessionId).not.toBe('cur')
+    expect(next.response).toEqual({ ok: true })
+  })
+
+  it('SEND_CURRENT_SESSION marks the archived session failed on sender failure', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a')], status: 'recording',
+      },
+    }
+    const sendImpl = vi.fn().mockResolvedValue({ ok: false, error: 'timeout' })
+    const next = await handleMessage(
+      state,
+      { type: MSG.SEND_CURRENT_SESSION, callIds: ['a'] },
+      'https://x/a',
+      { ...ctx, sendSession: sendImpl },
+    )
+    expect(next.state.sessions[0].transmitStatus).toBe('failed')
+    expect(next.state.sessions[0].calls).toHaveLength(1) // 데이터 보존
+    expect(next.response).toEqual({ ok: false, error: 'timeout' })
+  })
+
+  it('SEND_CURRENT_SESSION with no matching calls responds with an error and does not send', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a')], status: 'recording',
+      },
+    }
+    const sendImpl = vi.fn()
+    const next = await handleMessage(
+      state,
+      { type: MSG.SEND_CURRENT_SESSION, callIds: ['nope'] },
+      'https://x/a',
+      { ...ctx, sendSession: sendImpl },
+    )
+    expect(sendImpl).not.toHaveBeenCalled()
+    expect(next.state).toBe(state)
+    expect(next.response).toEqual({ ok: false, error: 'no calls selected' })
+  })
+
+  it('DELETE_CALL removes a single call from the current session', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a'), makeCall('b')], status: 'recording',
+      },
+    }
+    const next = await handleMessage(
+      state, { type: MSG.DELETE_CALL, callId: 'a' }, 'https://x/a', ctx,
+    )
+    expect(next.state.currentSession!.calls.map((c) => c.id)).toEqual(['b'])
+  })
+
+  it('DELETE_CALL with an unknown id is a no-op', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a')], status: 'recording',
+      },
+    }
+    const next = await handleMessage(
+      state, { type: MSG.DELETE_CALL, callId: 'zzz' }, 'https://x/a', ctx,
+    )
+    expect(next.state.currentSession!.calls).toHaveLength(1)
+  })
 })
 
 function emitter() {
