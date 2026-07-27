@@ -41,6 +41,7 @@ export async function sendSession(
         },
         body: JSON.stringify({
           sessionId: session.sessionId,
+          name: session.name, // undefined면 JSON.stringify가 필드 자체를 생략
           url: session.url,
           startedAt: session.startedAt,
           endedAt: session.endedAt,

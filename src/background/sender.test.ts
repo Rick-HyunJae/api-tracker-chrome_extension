@@ -82,6 +82,35 @@ describe('sender', () => {
     expect(result.error).toContain('serverUrl')
   })
 
+  it('includes the session name in the payload when present', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ mcpServers: [] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const namedSession: StoredSession = { ...session, name: '결제 세션' }
+    await sendSession(settings, namedSession, { sleep: async () => {} })
+
+    const [, init] = fetchMock.mock.calls[0]
+    const body = JSON.parse((init as RequestInit).body as string)
+    expect(body.name).toBe('결제 세션')
+  })
+
+  it('omits name from the payload when not set', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ mcpServers: [] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await sendSession(settings, session, { sleep: async () => {} })
+
+    const [, init] = fetchMock.mock.calls[0]
+    const body = JSON.parse((init as RequestInit).body as string)
+    expect('name' in body).toBe(false)
+  })
+
   it('merges new MCP entries without duplicating existing ones', () => {
     const existing = [{ id: 'a', name: 'A', sourceUrl: 'x', endpoint: 'y', createdAt: 1, active: true }]
     const incoming = [
