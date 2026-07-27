@@ -50,7 +50,9 @@ export function appendCall(
   if (settings.domainWhitelist.length > 0) {
     let host = ''
     try {
-      host = new URL(call.url).host
+      // .host는 포트를 포함해(`localhost:8787`) 도메인 패턴과 매칭이 깨진다.
+      // 블랙리스트(widget-host)의 location.hostname과 동일하게 포트 없는 hostname을 쓴다.
+      host = new URL(call.url).hostname
     } catch {
       host = ''
     }

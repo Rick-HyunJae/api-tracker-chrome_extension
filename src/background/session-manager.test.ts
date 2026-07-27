@@ -91,6 +91,12 @@ describe('session-manager', () => {
     expect(next.currentSession!.calls).toHaveLength(1)
   })
 
+  it('whitelist matches hosts with a non-default port (hostname, not host)', () => {
+    const settings = { ...DEFAULT_SETTINGS, domainWhitelist: ['localhost'] }
+    const next = appendCall(DEFAULT_STORAGE, call({ url: 'http://localhost:8787/api/users' }), 1, settings)
+    expect(next.currentSession!.calls).toHaveLength(1)
+  })
+
   it('strips the response body when saveBody is off', () => {
     const settings = { ...DEFAULT_SETTINGS, saveBody: false }
     const next = appendCall(DEFAULT_STORAGE, call({ responseBody: '{"a":1}' }), 1, settings)
