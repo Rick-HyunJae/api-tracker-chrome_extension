@@ -147,11 +147,12 @@ export function installXhrPatch(win: Window & typeof globalThis): void {
   }
 
   proto.open = function (this: Tracked, method: string, url: string | URL, ...rest: unknown[]) {
-    // Call through first, then stamp __cap: installXhrPatch may be applied more than
-    // once to the same XMLHttpRequest.prototype (e.g. the page's auto-install plus a
-    // test's explicit call), and each layer delegates to the previously-installed one.
-    // Setting __cap after the delegate call means the outermost (most-recently-applied)
-    // layer's `win` always wins, instead of being clobbered by an inner layer's write.
+    // Call through first, then stamp __cap. In tests, installXhrPatch layers onto the
+    // same XMLHttpRequest.prototype more than once: importing this module auto-installs
+    // against the global jsdom window (see the guard at the bottom), and each test's
+    // explicit installXhrPatch(win) stacks on top with nothing un-patching in between.
+    // Setting __cap after the delegate call lets the outermost layer's `win` win.
+    // On a real page this cannot happen — __apiToMcpInjected prevents double-install.
     const result = origOpen.call(this, method, url, ...rest)
     this.__cap = { url: absolutize(url.toString(), win), method, body: null, start: 0 }
     return result
