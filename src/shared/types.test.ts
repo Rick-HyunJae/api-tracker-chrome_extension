@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_SETTINGS, DEFAULT_STORAGE } from './types'
-import type { StorageSchema, ApiCall } from './types'
+import type { StorageSchema, ApiCall, StoredSession } from './types'
 
 describe('shared types defaults', () => {
   it('DEFAULT_SETTINGS has tracking enabled and empty blacklist', () => {
@@ -32,6 +32,14 @@ describe('shared types defaults', () => {
       capturedAt: 1,
     }
     expect(call.method).toBe('GET')
+  })
+
+  it('StoredSession accepts an optional name', () => {
+    const s: StoredSession = {
+      sessionId: 's1', url: 'https://x/a', startedAt: 1, endedAt: 2,
+      calls: [], transmitStatus: 'pending', name: '결제 API 세션',
+    }
+    expect(s.name).toBe('결제 API 세션')
   })
 })
 

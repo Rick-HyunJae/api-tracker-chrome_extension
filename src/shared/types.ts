@@ -36,6 +36,7 @@ export type TransmitStatus = 'pending' | 'sent' | 'failed'
 
 export interface StoredSession {
   sessionId: string
+  name?: string // 사용자가 전송 시 지정한 세션 이름 (선택)
   url: string
   startedAt: number
   endedAt: number
