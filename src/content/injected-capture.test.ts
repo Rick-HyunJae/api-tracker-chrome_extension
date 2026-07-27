@@ -91,6 +91,51 @@ describe('injected-capture', () => {
     expect(lastCall[1]).toBe('https://x') // targetOrigin is not '*'
   })
 
+  it('resolves a relative fetch URL against the page URL', async () => {
+    const fakeFetch = vi.fn().mockResolvedValue(new Response('{}', { status: 200 }))
+    const win = {
+      fetch: fakeFetch,
+      location: { href: 'https://x/page', origin: 'https://x' },
+      postMessage: vi.fn(),
+    } as unknown as Window & typeof globalThis
+
+    installFetchPatch(win)
+    const res = await win.fetch('/api/items')
+    await res.text()
+
+    const posted = (win.postMessage as ReturnType<typeof vi.fn>).mock.calls.at(-1)![0]
+    expect(posted.call.url).toBe('https://x/api/items') // 상대경로 → 절대화
+  })
+
+  it('resolves a relative XHR URL against the page URL', async () => {
+    const captured: Array<{ source: string; call: { url: string } }> = []
+    const win = {
+      XMLHttpRequest: window.XMLHttpRequest,
+      location: { href: 'https://x/page', origin: 'https://x' },
+      postMessage: vi.fn((msg: { source: string }) => {
+        if (msg?.source === POSTMSG_SOURCE) captured.push(msg as never)
+      }),
+    } as unknown as Window & typeof globalThis
+
+    installXhrPatch(win)
+
+    await new Promise<void>((resolve) => {
+      const xhr = new win.XMLHttpRequest()
+      xhr.addEventListener('loadend', () => resolve())
+      xhr.open('GET', '/api/data')
+      Object.defineProperty(xhr, 'status', { value: 200, configurable: true })
+      Object.defineProperty(xhr, 'responseText', { value: '{}', configurable: true })
+      Object.defineProperty(xhr, 'getAllResponseHeaders', {
+        value: () => 'content-type: application/json\r\n',
+        configurable: true,
+      })
+      xhr.send()
+      xhr.dispatchEvent(new Event('loadend'))
+    })
+
+    expect(captured[0].call.url).toBe('https://x/api/data')
+  })
+
   it('installHistoryPatch posts SESSION_CHANGE on pushState', () => {
     const win = {
       history: { pushState: vi.fn(), replaceState: vi.fn() },

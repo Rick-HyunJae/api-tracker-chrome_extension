@@ -48,6 +48,17 @@ function postSessionChange(win: Window, reason: SessionChangeReason, url: string
   win.postMessage({ source: POSTMSG_SOURCE, kind: MSG.SESSION_CHANGE, reason, url }, win.location.origin)
 }
 
+// Resolve relative URLs (the common SPA pattern: fetch('/api/x')) against the
+// page URL at capture time, so downstream URL parsing — whitelist host match,
+// dedupe path key, detail-view display — always sees an absolute URL.
+function absolutize(url: string, win: Window): string {
+  try {
+    return new URL(url, win.location.href).href
+  } catch {
+    return url // malformed input: keep the raw string, capture stays best-effort
+  }
+}
+
 function headersToObject(headers: Headers): Record<string, string> {
   const out: Record<string, string> = {}
   headers.forEach((v, k) => {
@@ -70,7 +81,10 @@ export function installFetchPatch(win: Window & typeof globalThis): void {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   ;(win as any).fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const start = Date.now()
-    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url
+    const url = absolutize(
+      typeof input === 'string' ? input : input instanceof URL ? input.href : (input as Request).url,
+      win,
+    )
     const method =
       init?.method ??
       (typeof input !== 'string' && !(input instanceof URL) ? (input as Request).method : 'GET')
@@ -133,8 +147,14 @@ export function installXhrPatch(win: Window & typeof globalThis): void {
   }
 
   proto.open = function (this: Tracked, method: string, url: string | URL, ...rest: unknown[]) {
-    this.__cap = { url: url.toString(), method, body: null, start: 0 }
-    return origOpen.call(this, method, url, ...rest)
+    // Call through first, then stamp __cap: installXhrPatch may be applied more than
+    // once to the same XMLHttpRequest.prototype (e.g. the page's auto-install plus a
+    // test's explicit call), and each layer delegates to the previously-installed one.
+    // Setting __cap after the delegate call means the outermost (most-recently-applied)
+    // layer's `win` always wins, instead of being clobbered by an inner layer's write.
+    const result = origOpen.call(this, method, url, ...rest)
+    this.__cap = { url: absolutize(url.toString(), win), method, body: null, start: 0 }
+    return result
   }
 
   proto.send = function (this: Tracked, body?: Document | XMLHttpRequestBodyInit | null) {
