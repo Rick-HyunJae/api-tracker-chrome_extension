@@ -33,4 +33,10 @@ describe('DetailView', () => {
     render(<DetailView call={{ ...call, responseBody: null }} onBack={vi.fn()} />)
     expect(screen.getByText(/본문 없음/)).toBeInTheDocument()
   })
+
+  it('renders the actual scheme instead of hardcoding https', () => {
+    render(<DetailView call={{ ...call, url: 'http://localhost:8787/api/orders' }} onBack={vi.fn()} />)
+    expect(screen.getByText('http://localhost:8787')).toBeInTheDocument()
+    expect(screen.queryByText('https://localhost:8787')).not.toBeInTheDocument()
+  })
 })

@@ -14,6 +14,14 @@ export function pathOf(url: string): string {
   }
 }
 
+export function originOf(url: string): string {
+  try {
+    return new URL(url).origin // 스킴 포함 — https:// 하드코딩으로 인한 오표기 방지
+  } catch {
+    return ''
+  }
+}
+
 export function sizeOf(body: string | null): number {
   return body ? body.length : 0
 }

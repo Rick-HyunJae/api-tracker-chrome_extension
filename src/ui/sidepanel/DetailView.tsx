@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import type { ApiCall } from '../../shared/types'
-import { hostOf, pathOf, sizeOf, statusClass, headersEntries, highlightJson, formatTime } from './view-utils'
+import { pathOf, sizeOf, statusClass, headersEntries, highlightJson, formatTime, originOf } from './view-utils'
 import { Back } from './icons'
 import { CopyBtn } from './CopyBtn'
 
@@ -28,7 +28,7 @@ export function DetailView({ call, onBack }: { call: ApiCall; onBack: () => void
             <span className={'status ' + statusClass(call.responseStatus)} style={{ fontSize: 12 }}>{call.responseStatus}</span>
             <span style={{ marginLeft: 'auto', fontFamily: 'var(--mono)', fontSize: 10.5, color: 'var(--text-3)' }}>{formatTime(call.capturedAt)}</span>
           </div>
-          <div className="full"><span style={{ color: 'var(--text-3)' }}>https://{hostOf(call.url)}</span><b>{pathOf(call.url)}</b></div>
+          <div className="full"><span style={{ color: 'var(--text-3)' }}>{originOf(call.url)}</span><b>{pathOf(call.url)}</b></div>
           <div className="durl-stat">
             <span>응답 <b>{call.durationMs}ms</b></span>
             <span>크기 <b>{sizeOf(call.responseBody)}B</b></span>

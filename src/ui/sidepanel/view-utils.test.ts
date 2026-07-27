@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hostOf, pathOf, sizeOf, statusClass, headersEntries, highlightJson, formatTime } from './view-utils'
+import { hostOf, pathOf, sizeOf, statusClass, headersEntries, highlightJson, formatTime, originOf } from './view-utils'
 
 describe('view-utils', () => {
   it('hostOf extracts the host', () => {
@@ -39,5 +39,14 @@ describe('view-utils', () => {
     // Asserts the format contract (padding + separators) without depending on the
     // host timezone of the test runner.
     expect(formatTime(1700000000000)).toMatch(/^\d{2}:\d{2}:\d{2}$/)
+  })
+  describe('originOf', () => {
+    it('returns scheme + host including port', () => {
+      expect(originOf('http://localhost:8787/api/orders')).toBe('http://localhost:8787')
+      expect(originOf('https://api.shop.io/v1/users?p=1')).toBe('https://api.shop.io')
+    })
+    it('returns empty string for malformed urls', () => {
+      expect(originOf('/api/orders')).toBe('')
+    })
   })
 })
