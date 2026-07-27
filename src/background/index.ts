@@ -82,7 +82,14 @@ async function sendArchivedAt(
   ctx: RouterCtx,
 ): Promise<RouterResult> {
   const send = ctx.sendSession ?? defaultSendSession
-  const result = await send(state.settings, state.sessions[idx])
+  let result: SendResult
+  try {
+    result = await send(state.settings, state.sessions[idx])
+  } catch (e) {
+    // 주입된 sender가 reject하면 응답 자체가 유실된다(serialized의 무음 catch).
+    // 단일 관문에서 실패 결과로 접어 sendResponse가 항상 나가게 한다.
+    result = { ok: false, error: e instanceof Error ? e.message : String(e) }
+  }
   const sessions = state.sessions.slice()
   if (result.ok) {
     sessions[idx] = { ...sessions[idx], transmitStatus: 'sent', sentAt: ctx.now() }

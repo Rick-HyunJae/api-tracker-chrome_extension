@@ -283,6 +283,28 @@ describe('background message router', () => {
     expect(next.response).toEqual({ ok: false, error: 'timeout' })
   })
 
+  it('SEND_CURRENT_SESSION folds a thrown sender error into a failed response', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a')], status: 'recording',
+      },
+    }
+    const sendImpl = vi.fn().mockRejectedValue(new Error('boom'))
+    const next = await handleMessage(
+      state,
+      { type: MSG.SEND_CURRENT_SESSION, callIds: ['a'] },
+      'https://x/a',
+      { ...ctx, sendSession: sendImpl },
+    )
+    // throw도 실패 응답으로 접힌다 — serialized()의 무음 catch에 삼켜져 응답이 유실되지 않도록
+    expect(next.state.sessions[0].transmitStatus).toBe('failed')
+    expect(next.state.sessions[0].calls).toHaveLength(1)
+    expect(next.response!.ok).toBe(false)
+    expect(next.response!.error).toContain('boom')
+  })
+
   it('SEND_CURRENT_SESSION with no matching calls responds with an error and does not send', async () => {
     const state: StorageSchema = {
       ...DEFAULT_STORAGE,
