@@ -11,7 +11,9 @@ const call = (over: Partial<ApiCall> = {}): ApiCall => ({
 
 const base = {
   tracking: true, query: '', freshId: null, sending: false,
+  excludedIds: new Set<string>(), selectedCount: 1,
   onToggleTracking: vi.fn(), onSearch: vi.fn(), onSelect: vi.fn(),
+  onToggleExclude: vi.fn(), onToggleAll: vi.fn(), onDelete: vi.fn(),
   onClear: vi.fn(), onGoSend: vi.fn(), onClose: vi.fn(),
 }
 
@@ -46,5 +48,44 @@ describe('ListView', () => {
     render(<ListView {...base} calls={[]} onToggleTracking={onToggleTracking} />)
     fireEvent.click(screen.getByTitle('수집 일시정지'))
     expect(onToggleTracking).toHaveBeenCalled()
+  })
+
+  it('renders a checkbox per entry, checked when not excluded', () => {
+    render(<ListView {...base} calls={[call()]} />)
+    expect(screen.getByRole('checkbox', { name: '전송 대상' })).toBeChecked()
+  })
+
+  it('renders the checkbox unchecked when the call is excluded', () => {
+    render(<ListView {...base} calls={[call()]} excludedIds={new Set(['c1'])} selectedCount={0} />)
+    expect(screen.getByRole('checkbox', { name: '전송 대상' })).not.toBeChecked()
+  })
+
+  it('toggling a checkbox calls onToggleExclude with the call id', () => {
+    const onToggleExclude = vi.fn()
+    render(<ListView {...base} calls={[call()]} onToggleExclude={onToggleExclude} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: '전송 대상' }))
+    expect(onToggleExclude).toHaveBeenCalledWith('c1')
+  })
+
+  it('select-all checkbox calls onToggleAll', () => {
+    const onToggleAll = vi.fn()
+    render(<ListView {...base} calls={[call()]} onToggleAll={onToggleAll} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: '전체 선택' }))
+    expect(onToggleAll).toHaveBeenCalled()
+  })
+
+  it('delete button calls onDelete with the call id', () => {
+    const onDelete = vi.fn()
+    render(<ListView {...base} calls={[call()]} onDelete={onDelete} />)
+    fireEvent.click(screen.getByTitle('이 호출 삭제'))
+    expect(onDelete).toHaveBeenCalledWith('c1')
+  })
+
+  it('footer send button shows the selected count and disables at zero', () => {
+    const { rerender } = render(<ListView {...base} calls={[call()]} selectedCount={1} />)
+    // '1' 은 recbar 의 수집 건수(<b>)와도 우연히 겹치므로 pill 로 범위를 좁힌다
+    expect(screen.getByText('1', { selector: '.pill' })).toBeInTheDocument()
+    rerender(<ListView {...base} calls={[call()]} selectedCount={0} />)
+    expect(screen.getByRole('button', { name: /서버로 전송/ })).toBeDisabled()
   })
 })

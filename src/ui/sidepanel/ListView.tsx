@@ -9,9 +9,14 @@ interface ListViewProps {
   query: string
   freshId: string | null
   sending: boolean
+  excludedIds: Set<string> // 전송 제외로 표시된 호출 id (신규 도착은 자동 포함)
+  selectedCount: number
   onToggleTracking: () => void
   onSearch: (q: string) => void
   onSelect: (id: string) => void
+  onToggleExclude: (id: string) => void
+  onToggleAll: () => void
+  onDelete: (id: string) => void
   onClear: () => void
   onGoSend: () => void
   onClose: () => void
@@ -71,6 +76,20 @@ export function ListView(props: ListViewProps): React.ReactElement {
         />
       </div>
 
+      <div className="selbar">
+        <label className="selbar-all">
+          <input
+            type="checkbox"
+            aria-label="전체 선택"
+            checked={calls.length > 0 && props.selectedCount === calls.length}
+            onChange={props.onToggleAll}
+            disabled={!calls.length}
+          />
+          전체 선택
+        </label>
+        <span className="selbar-count">{props.selectedCount}/{calls.length}건 전송 대상</span>
+      </div>
+
       <div className="scroll">
         {filtered.length === 0 ? (
           <div className="empty">
@@ -81,34 +100,49 @@ export function ListView(props: ListViewProps): React.ReactElement {
         ) : (
           <div className="list">
             {filtered.map((c) => (
-              <button
-                key={c.id}
-                className={'entry' + (c.id === freshId ? ' fresh' : '')}
-                onClick={() => props.onSelect(c.id)}
-              >
-                <div className="entry-top">
-                  <span className={'badge ' + c.method}>{c.method}</span>
-                  <span className="path">{pathOf(c.url)}</span>
-                  <span className={'status ' + statusClass(c.responseStatus)}>{c.responseStatus}</span>
-                </div>
-                <div className="entry-meta">
-                  <span className="host">{hostOf(c.url)}</span>
-                  <span className="sep">·</span>
-                  <span>{c.durationMs}ms</span>
-                  <span className="sep">·</span>
-                  <span>{sizeOf(c.responseBody)}B</span>
-                  <span style={{ marginLeft: 'auto' }}>{formatTime(c.capturedAt)}</span>
-                </div>
-                <span className="chev"><Chevron size={15} /></span>
-              </button>
+              <div key={c.id} className="entry-row">
+                <input
+                  type="checkbox"
+                  className="entry-check"
+                  aria-label="전송 대상"
+                  checked={!props.excludedIds.has(c.id)}
+                  onChange={() => props.onToggleExclude(c.id)}
+                />
+                <button
+                  className={'entry' + (c.id === freshId ? ' fresh' : '')}
+                  onClick={() => props.onSelect(c.id)}
+                >
+                  <div className="entry-top">
+                    <span className={'badge ' + c.method}>{c.method}</span>
+                    <span className="path">{pathOf(c.url)}</span>
+                    <span className={'status ' + statusClass(c.responseStatus)}>{c.responseStatus}</span>
+                  </div>
+                  <div className="entry-meta">
+                    <span className="host">{hostOf(c.url)}</span>
+                    <span className="sep">·</span>
+                    <span>{c.durationMs}ms</span>
+                    <span className="sep">·</span>
+                    <span>{sizeOf(c.responseBody)}B</span>
+                    <span style={{ marginLeft: 'auto' }}>{formatTime(c.capturedAt)}</span>
+                  </div>
+                  <span className="chev"><Chevron size={15} /></span>
+                </button>
+                <button
+                  className="entry-del"
+                  title="이 호출 삭제"
+                  onClick={() => props.onDelete(c.id)}
+                >
+                  <Trash size={13} />
+                </button>
+              </div>
             ))}
           </div>
         )}
       </div>
 
       <div className="pfoot">
-        <button className="btn btn-primary" disabled={!calls.length || sending} onClick={props.onGoSend}>
-          {sending ? '전송 중…' : <><Send size={16} /> 서버로 전송 <span className="pill">{calls.length}</span></>}
+        <button className="btn btn-primary" disabled={!props.selectedCount || sending} onClick={props.onGoSend}>
+          {sending ? '전송 중…' : <><Send size={16} /> 서버로 전송 <span className="pill">{props.selectedCount}</span></>}
         </button>
         <button className="btn btn-ghost" title="전체 삭제" onClick={props.onClear} disabled={!calls.length}>
           <Trash size={16} />
