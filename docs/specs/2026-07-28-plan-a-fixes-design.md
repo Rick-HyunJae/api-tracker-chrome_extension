@@ -105,6 +105,15 @@
 - `sidepanel/index.test.tsx`: `onSend` 메시지 페이로드 검증(BUG 1의 통합 구멍 직접 커버), 토스트 아이콘 분기
 - `injected-capture.test.ts`: 상대경로 절대화(fetch/XHR)
 
+### 8. Handoff 문서 (작업 완료 후 산출물)
+
+구현·검증 완료 후, 이 확장의 사용 방법을 담은 handoff 문서를 작성한다:
+
+- 경로: `docs/handoff/2026-07-28-extension-usage.md` (+ 스크린샷은 `docs/handoff/images/`)
+- 내용: 핵심만 간략히 — 빌드·로드 방법, 캡처 시작/중지, 리스트·상세 확인,
+  전송 필터링(체크박스)·세션 이름 지정·전송, 설정(서버 URL/API Key/화이트리스트)
+- 이미지: 구현 완료 후 새 UI 기준의 실제 스크린샷(위젯, List 체크박스, Send 뷰 이름 입력 등)
+
 ## 범위 밖 (향후 작업으로 이관)
 
 - 히스토리 뷰(failed/pending 재전송 UI), MCP 뷰 구현
