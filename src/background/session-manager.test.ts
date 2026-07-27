@@ -3,6 +3,7 @@ import {
   startSession,
   appendCall,
   rotateSession,
+  splitAndArchive,
   shouldAutoSend,
   AUTO_SEND_THRESHOLD,
   IDLE_TIMEOUT_MS,
@@ -121,5 +122,55 @@ describe('session-manager', () => {
       currentSession: { sessionId: 's', url: 'https://x/a', startedAt: 1, calls, status: 'recording' },
     }
     expect(shouldAutoSend(state, { ...DEFAULT_SETTINGS, autoSend: true })).toBe(false)
+  })
+
+  describe('splitAndArchive', () => {
+    function recorded(ids: string[]): StorageSchema {
+      return {
+        ...DEFAULT_STORAGE,
+        currentSession: {
+          sessionId: 'cur', url: 'https://x/page', startedAt: 1000,
+          calls: ids.map((id) => makeCall(id)), status: 'recording',
+        },
+      }
+    }
+
+    it('archives selected calls as pending with the given name', () => {
+      const next = splitAndArchive(recorded(['a', 'b', 'c']), ['a', 'c'], '내 세션', 2000)
+      expect(next.sessions).toHaveLength(1)
+      expect(next.sessions[0].name).toBe('내 세션')
+      expect(next.sessions[0].transmitStatus).toBe('pending')
+      expect(next.sessions[0].endedAt).toBe(2000)
+      expect(next.sessions[0].calls.map((c) => c.id)).toEqual(['a', 'c'])
+    })
+
+    it('keeps unselected calls in a fresh current session', () => {
+      const next = splitAndArchive(recorded(['a', 'b', 'c']), ['a', 'c'], undefined, 2000)
+      expect(next.currentSession!.calls.map((c) => c.id)).toEqual(['b'])
+      expect(next.currentSession!.sessionId).not.toBe('cur') // 새 세션 id
+      expect(next.currentSession!.startedAt).toBe(2000)
+      expect(next.currentSession!.url).toBe('https://x/page')
+    })
+
+    it('omits name when not provided', () => {
+      const next = splitAndArchive(recorded(['a']), ['a'], undefined, 2000)
+      expect(next.sessions[0].name).toBeUndefined()
+    })
+
+    it('returns the SAME state reference when nothing is selected (no-op contract)', () => {
+      const state = recorded(['a', 'b'])
+      expect(splitAndArchive(state, [], undefined, 2000)).toBe(state)
+      expect(splitAndArchive(state, ['nope'], undefined, 2000)).toBe(state)
+    })
+
+    it('returns the SAME state reference when there is no current session', () => {
+      expect(splitAndArchive(DEFAULT_STORAGE, ['a'], undefined, 2000)).toBe(DEFAULT_STORAGE)
+    })
+
+    it('selecting every call empties the new current session', () => {
+      const next = splitAndArchive(recorded(['a', 'b']), ['a', 'b'], undefined, 2000)
+      expect(next.sessions[0].calls).toHaveLength(2)
+      expect(next.currentSession!.calls).toEqual([])
+    })
   })
 })

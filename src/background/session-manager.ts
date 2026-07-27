@@ -101,3 +101,38 @@ export function rotateSession(state: StorageSchema, nextUrl: string, now: number
     currentSession: freshSession(nextUrl, now),
   }
 }
+
+// Cherry-pick rotation for manual send: archives ONLY the selected calls as a
+// pending StoredSession (with an optional user-given name) and keeps the rest
+// in a fresh current session. Returns the SAME state reference (===) when there
+// is nothing to archive — callers rely on referential equality to detect a
+// no-op, mirroring the appendCall contract.
+export function splitAndArchive(
+  state: StorageSchema,
+  callIds: string[],
+  name: string | undefined,
+  now: number,
+): StorageSchema {
+  const current = state.currentSession
+  if (!current) return state
+  const ids = new Set(callIds)
+  const selected = current.calls.filter((c) => ids.has(c.id))
+  if (selected.length === 0) return state
+  const remaining = current.calls.filter((c) => !ids.has(c.id))
+
+  const archived: StoredSession = {
+    sessionId: current.sessionId,
+    ...(name !== undefined ? { name } : {}),
+    url: current.url,
+    startedAt: current.startedAt,
+    endedAt: now,
+    calls: selected,
+    transmitStatus: 'pending',
+  }
+
+  return {
+    ...state,
+    sessions: [...state.sessions, archived],
+    currentSession: { ...freshSession(current.url, now), calls: remaining },
+  }
+}
