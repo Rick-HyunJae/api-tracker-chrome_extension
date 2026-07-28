@@ -50,6 +50,7 @@
 | 파일 | 요약 |
 |---|---|
 | `cdp-screenshot-hangs-when-display-asleep.md` | CDP `Page.captureScreenshot` 무한 대기 — 디스플레이 절전과 GPU 컴포지팅, 두 원인 |
+| `vitest-exclude-misses-tool-specific-worktree-path.md` | Vitest exclude가 `.worktrees/`만 막아 `.claude/worktrees/`를 놓침 — 메인 repo에서 테스트 54개 실패 |
 | `jsdom-pointer-event-missing-coordinates.md` | jsdom이 PointerEvent를 미구현 — polyfill 없이 pointer drag 테스트는 좌표를 받지 못함 |
 | `vitest-esbuild-skips-type-checking.md` | Vitest(esbuild)는 타입 검사 없이 통과 — 공유 인터페이스 변경 후 반드시 tsc --noEmit 실행 |
 

@@ -77,7 +77,7 @@ Superpowers 산출물 경로 규칙: `.claude/rules/superpowers.md`
 | 4. Review | `plan-*` / `code-*` review | (파일 누적 없음 — 단발성 리뷰) |
 | 5. Compound | `compound-solutions` (write) | `docs/solutions/<category>/<file>.md` |
 
-**단계 0 필수**: Brainstorming 시작 전 `compound-solutions` read 모드로 `docs/solutions/`의 선행 지식을 확인한다. 관련 문서가 없으면 결과 없음을 확인하고 바로 진행한다.
+**단계 0 필수**: Brainstorming 시작 전 `compound-solutions` read 모드로 `docs/solutions/`의 선행 지식을 확인한다. 문서는 카테고리 디렉터리로 나뉘고 각각 `module`·`tags`·`problem_type`·`symptoms` frontmatter를 가지므로, 그 필드를 grep하면 빠르게 좁힐 수 있다(인덱스는 `docs/solutions/README.md`). 관련 문서가 없으면 결과 없음을 확인하고 바로 진행한다.
 
 **IMPORTANT**: 각 단계가 마무리되면 **반드시** 다음 단계 또는 적절한 후속 skill을 사용자에게 제안한다. 예: interview 종료 → brainstorming 제안, plan 작성 완료 → execute 제안, 작업 종료 → compound write 제안.
 

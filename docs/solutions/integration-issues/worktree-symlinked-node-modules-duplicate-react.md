@@ -86,7 +86,7 @@ The diagnostic tell is the split: **logic tests green, component tests red**. Lo
 ## Prevention
 
 - **Rule**: in a JS/TS project, every git worktree must have its own `node_modules` — either via `npm install` or `cp -al`. Never symlink.
-- **Diagnostic checklist** when component tests fail en masse in a new environment: (1) is `node_modules` a symlink? `ls -la node_modules`; (2) are logic-only tests passing? If yes, suspect duplicate React before suspecting test logic.
+- **Diagnostic checklist** when component tests fail en masse in a new environment: (1) is `node_modules` a symlink? `ls -la node_modules`; (2) are logic-only tests passing? If yes, suspect duplicate React before suspecting test logic; (3) **is the failure happening in the main repo rather than the worktree?** Check the failing paths' prefix and the collected-test count — if the paths start with a worktree directory and the count is a multiple of normal, the worktree is not excluded from test collection. A glob that covers one worktree convention but not another (e.g. `.worktrees/` but not `.claude/worktrees/`) fails silently. See [vitest-exclude-misses-tool-specific-worktree-path](../testing/vitest-exclude-misses-tool-specific-worktree-path.md) — same symptom, different cause.
 - **CI guard**: add a pre-test assertion (or a husky/lefthook hook) that `[ ! -L node_modules ]` in worktrees to catch accidental symlinks early.
 - **Document the worktree setup step** in the project's onboarding notes: "After `git worktree add`, always run `npm install` inside the new worktree before running tests."
 
