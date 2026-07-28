@@ -72,7 +72,25 @@ await waitFor(() =>
 - 메시지 타입을 추가/변경할 때는 "보내는 쪽 테스트"와 "받는 쪽 테스트"가 **같은 픽스처 모양**을
   공유하는지 확인한다. 픽스처가 다르면 계약 드리프트가 테스트를 통과한다.
 
+## 후속 변경 (2026-07-28, 수집 탭 통합)
+
+위 Solution의 메시지는 이후 **`SEND_CURRENT_SESSION { callIds }`로 축소**되었다. 세션 이름이
+전송 시점 입력에서 설정값(`Settings.sessionName`)으로 옮겨가면서, UI가 이름을 실어 보내는 대신
+백그라운드가 `state.settings.sessionName.trim() || undefined`를 직접 읽는다. 값의 출처를 하나로
+두어 "패널이 열린 채 설정을 바꾸면 어느 값이 나가는가"라는 모호함을 없앤 것이다.
+
+이 문서의 Prevention 항목은 그대로 유효하며, 실제로 그 변경에서 사용되었다 — 보내는 쪽
+(`index.test.tsx`)과 받는 쪽(`background/index.test.ts`) 테스트를 같은 커밋에서 함께 갱신했다.
+
+한 가지 덧붙일 사실: **`chrome.runtime.sendMessage`는 타입으로 계약을 지켜주지 않는다.**
+시그니처가 `sendMessage<M = any>(message: M)`이라 리터럴에서 `M`을 추론하므로 excess-property
+검사가 발동하지 않는다. 메시지 타입에서 필드를 지워도 송신 측에서 그 필드를 다시 넣으면
+컴파일은 통과한다(실측 확인). 수신 측만 `msg.name` 접근에서 TS2339로 막힌다. 따라서 송신 측
+방어는 여전히 **테스트**의 몫이며, `toHaveBeenCalledWith`(부분 일치인 `objectContaining`이 아니라
+정확 일치)로 어설션해야 한다.
+
 ## Related Issues
 
 - [session-change-as-keepalive-not-boundary](../logic-errors/session-change-as-keepalive-not-boundary.md) — 같은 세션 경계 설계의 앞선 결정
 - docs/specs/2026-07-28-plan-a-fixes-design.md
+- docs/specs/2026-07-28-collect-tab-consolidation-design.md — 위 후속 변경의 설계

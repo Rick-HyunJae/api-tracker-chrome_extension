@@ -3,11 +3,16 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { Rail } from './Rail'
 
 describe('Rail', () => {
-  it('switches to the send view', () => {
+  it('switches to the settings view', () => {
     const onView = vi.fn()
     render(<Rail view="list" onView={onView} count={3} />)
-    fireEvent.click(screen.getByRole('button', { name: /전송/ }))
-    expect(onView).toHaveBeenCalledWith('send')
+    fireEvent.click(screen.getByRole('button', { name: /설정/ }))
+    expect(onView).toHaveBeenCalledWith('settings')
+  })
+
+  it('has no send tab', () => {
+    render(<Rail view="list" onView={vi.fn()} count={3} />)
+    expect(screen.queryByRole('button', { name: '전송' })).not.toBeInTheDocument()
   })
 
   it('shows the capture count badge', () => {

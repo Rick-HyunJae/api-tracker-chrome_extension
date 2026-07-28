@@ -147,13 +147,36 @@ pre.code { margin: 0; padding: 12px 13px; font-family: var(--mono); font-size: 1
 .rail-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
 /* --- 전송 대상 선택 (ListView) --- */
-.selbar {
-  display: flex; align-items: center; justify-content: space-between;
+.entry-check { accent-color: var(--accent); cursor: pointer; }
+
+/* --- SummaryBar: 선택 바 + 접이식 전송 요약 --- */
+.sumbar { border-bottom: 1px solid var(--border-soft); }
+.sumbar-row {
+  display: flex; align-items: center; gap: 8px;
   padding: 6px 14px; font-size: 11.5px; color: var(--text-3);
-  border-bottom: 1px solid var(--border-soft);
 }
-.selbar-all { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-.selbar-all input, .entry-check { accent-color: var(--accent); cursor: pointer; }
+.sumbar-row input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; flex: none; }
+.sumbar-stat { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sumbar-toggle {
+  flex: none; background: none; border: none; color: var(--text-3);
+  cursor: pointer; padding: 2px; border-radius: 6px; display: flex;
+  transform: rotate(90deg); transition: transform .18s ease;
+}
+.sumbar-toggle.open { transform: rotate(-90deg); }
+.sumbar-toggle:hover { color: var(--text-2); background: var(--surface-2); }
+.sumbar-detail {
+  display: flex; flex-direction: column; gap: 6px;
+  padding: 2px 14px 10px; background: var(--surface);
+}
+.sumbar-dist { display: flex; align-items: center; gap: 8px; }
+.sumbar-dist .badge { width: 46px; text-align: center; }
+.sumbar-track { flex: 1; height: 6px; border-radius: 6px; background: var(--surface-2); overflow: hidden; }
+.sumbar-fill { height: 100%; border-radius: 6px; }
+.sumbar-n { font-family: var(--mono); font-size: 11px; color: var(--text-2); width: 20px; text-align: right; }
+.sumbar-kv { display: flex; gap: 10px; font-size: 11.5px; color: var(--text-3); }
+.sumbar-kv span { width: 34px; flex: none; }
+.sumbar-kv b { color: var(--text-2); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
 .entry-row { display: flex; align-items: stretch; gap: 6px; }
 .entry-row .entry { flex: 1; min-width: 0; }
 .entry-check { flex: none; align-self: center; }
@@ -164,23 +187,3 @@ pre.code { margin: 0; padding: 12px 13px; font-family: var(--mono); font-size: 1
 }
 .entry-row:hover .entry-del, .entry-row:focus-within .entry-del { opacity: 1; pointer-events: auto; }
 .entry-del:hover { color: var(--rec); background: var(--surface-2); }
-
-/* --- SendView: 세션 이름 입력 · 불확정 진행률 --- */
-.name-input {
-  width: 100%; box-sizing: border-box; padding: 9px 12px;
-  background: var(--surface); border: 1px solid var(--border-soft);
-  border-radius: 8px; color: var(--text); font-size: 12.5px;
-}
-.name-input::placeholder { color: var(--text-3); }
-.progress-indet {
-  height: 5px; border-radius: 5px; background: var(--surface-2); overflow: hidden;
-}
-.progress-indet::after {
-  content: ''; display: block; height: 100%; width: 40%;
-  background: var(--accent); border-radius: 5px;
-  animation: indet-slide 1.1s ease-in-out infinite;
-}
-@keyframes indet-slide {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(350%); }
-}

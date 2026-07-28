@@ -72,6 +72,25 @@ const shot = await Promise.race([
 ])
 ```
 
+## 두 번째 원인 — GPU 컴포지팅 경로 (2026-07-28 추가)
+
+같은 증상(스크린샷만 무한 대기, 다른 CDP 명령은 정상)이 **디스플레이가 깨어 있는데도** 재현된
+사례가 있다. `caffeinate`로 해소되지 않았고, 네이티브 `screencapture -x`조차
+`could not create image from display`로 실패했다 — 즉 Chrome이 아니라 호스트의 화면 캡처
+경로 자체가 막힌 상태였다(macOS 화면 기록 권한 미부여로 추정).
+
+해소는 GPU 컴포지팅을 우회해 브라우저를 띄우는 것:
+
+```bash
+agent-browser --session <name> --headed --extension "$PWD/dist" \
+  --args "--disable-gpu,--use-gl=swiftshader,--disable-gpu-compositing" \
+  open http://localhost:4599/
+```
+
+**감별 방법**: `caffeinate -u -t 3` 후에도 hang이 계속되면 디스플레이 절전이 원인이 아니다.
+`screencapture -x /tmp/probe.png`를 직접 실행해 보고 그것마저 실패하면 호스트 캡처 경로 문제이므로
+위 `--args`로 소프트웨어 렌더링을 강제한다. 성공하면 Chrome/컴포지터 쪽 문제다.
+
 ## Related
 
 - [jsdom-pointer-event-missing-coordinates](jsdom-pointer-event-missing-coordinates.md) — 같은 계열(테스트 환경이 런타임과 다르게 동작)

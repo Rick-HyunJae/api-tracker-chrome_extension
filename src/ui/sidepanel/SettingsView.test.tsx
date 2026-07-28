@@ -24,4 +24,11 @@ describe('SettingsView', () => {
     fireEvent.click(screen.getByTestId('sw-saveBody'))
     expect(onChange).toHaveBeenCalledWith({ saveBody: false })
   })
+
+  it('edits the session name and emits a patch', () => {
+    const onChange = vi.fn()
+    render(<SettingsView settings={DEFAULT_SETTINGS} onChange={onChange} />)
+    fireEvent.change(screen.getByLabelText(/세션 이름/), { target: { value: '주문 API' } })
+    expect(onChange).toHaveBeenCalledWith({ sessionName: '주문 API' })
+  })
 })

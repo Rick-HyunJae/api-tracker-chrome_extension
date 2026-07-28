@@ -1,7 +1,8 @@
 import React from 'react'
-import type { ApiCall } from '../../shared/types'
+import type { ApiCall, Settings } from '../../shared/types'
 import { hostOf, pathOf, sizeOf, statusClass, formatTime } from './view-utils'
 import { Stack, Play, Pause, Trash, Search, Chevron, Send } from './icons'
+import { SummaryBar } from './SummaryBar'
 
 interface ListViewProps {
   calls: ApiCall[]
@@ -10,7 +11,8 @@ interface ListViewProps {
   freshId: string | null
   sending: boolean
   excludedIds: Set<string> // 전송 제외로 표시된 호출 id (신규 도착은 자동 포함)
-  selectedCount: number
+  selectedCalls: ApiCall[] // 전송 대상 — 요약 계산과 푸터 카운트에 함께 쓰인다
+  settings: Settings
   onToggleTracking: () => void
   onSearch: (q: string) => void
   onSelect: (id: string) => void
@@ -18,7 +20,7 @@ interface ListViewProps {
   onToggleAll: () => void
   onDelete: (id: string) => void
   onClear: () => void
-  onGoSend: () => void
+  onSend: () => void
   onClose: () => void
 }
 
@@ -76,19 +78,13 @@ export function ListView(props: ListViewProps): React.ReactElement {
         />
       </div>
 
-      <div className="selbar">
-        <label className="selbar-all">
-          <input
-            type="checkbox"
-            aria-label="전체 선택"
-            checked={calls.length > 0 && props.selectedCount === calls.length}
-            onChange={props.onToggleAll}
-            disabled={!calls.length || sending}
-          />
-          전체 선택
-        </label>
-        <span className="selbar-count">{props.selectedCount}/{calls.length}건 전송 대상</span>
-      </div>
+      <SummaryBar
+        calls={props.selectedCalls}
+        totalCount={calls.length}
+        settings={props.settings}
+        disabled={!calls.length || sending}
+        onToggleAll={props.onToggleAll}
+      />
 
       <div className="scroll">
         {filtered.length === 0 ? (
@@ -143,8 +139,8 @@ export function ListView(props: ListViewProps): React.ReactElement {
       </div>
 
       <div className="pfoot">
-        <button className="btn btn-primary" disabled={!props.selectedCount || sending} onClick={props.onGoSend}>
-          {sending ? '전송 중…' : <><Send size={16} /> 서버로 전송 <span className="pill">{props.selectedCount}</span></>}
+        <button className="btn btn-primary" disabled={!props.selectedCalls.length || sending} onClick={props.onSend}>
+          {sending ? '전송 중…' : <><Send size={16} /> 서버로 전송 <span className="pill">{props.selectedCalls.length}</span></>}
         </button>
         <button className="btn btn-ghost" title="전체 삭제" onClick={props.onClear} disabled={!calls.length || sending}>
           <Trash size={16} />

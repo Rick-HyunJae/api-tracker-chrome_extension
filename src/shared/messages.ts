@@ -35,8 +35,7 @@ export interface SendSessionMessage {
 
 export interface SendCurrentSessionMessage {
   type: typeof MSG.SEND_CURRENT_SESSION
-  name?: string // 세션 이름 (선택) — 아카이브·페이로드에 스탬프
-  callIds: string[] // 전송 대상으로 선택된 호출 id (체리픽)
+  callIds: string[] // 전송 대상으로 선택된 호출 id (체리픽). 세션 이름은 settings.sessionName에서 읽는다
 }
 
 export interface DeleteCallMessage {

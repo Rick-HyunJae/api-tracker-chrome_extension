@@ -57,4 +57,7 @@ describe('DEFAULT_SETTINGS capture fields', () => {
     expect(DEFAULT_SETTINGS.autoSend).toBe(false)
     expect(DEFAULT_SETTINGS.dedupe).toBe(false)
   })
+  it('has an empty session name by default', () => {
+    expect(DEFAULT_SETTINGS.sessionName).toBe('')
+  })
 })

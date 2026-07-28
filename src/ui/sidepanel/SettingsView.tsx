@@ -40,6 +40,10 @@ export function SettingsView({ settings, onChange }: SettingsViewProps): React.R
               <label htmlFor="set-token">인증 토큰 (선택)</label>
               <input id="set-token" type="text" placeholder="Bearer …" value={settings.apiKey} onChange={(e) => onChange({ apiKey: e.target.value })} />
             </div>
+            <div className="field">
+              <label htmlFor="set-session-name">세션 이름 (선택) <small style={{ color: 'var(--text-3)' }}>(비우면 이름 없이 전송)</small></label>
+              <input id="set-session-name" type="text" placeholder="주문 API" value={settings.sessionName} onChange={(e) => onChange({ sessionName: e.target.value })} />
+            </div>
           </div>
 
           <div className="set-group">

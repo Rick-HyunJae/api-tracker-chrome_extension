@@ -1,7 +1,7 @@
 import React from 'react'
-import { Stack, Cloud, Gear, Clock } from './icons'
+import { Stack, Gear, Clock } from './icons'
 
-export type RailView = 'list' | 'send' | 'settings'
+export type RailView = 'list' | 'settings'
 
 interface RailProps {
   view: RailView
@@ -16,9 +16,6 @@ export function Rail({ view, onView, count }: RailProps): React.ReactElement {
         <button className={'rail-btn' + (view === 'list' ? ' active' : '')} onClick={() => onView('list')}>
           <Stack size={19} /><span className="lab">수집</span>
           {count ? <span className="ndot">{count > 99 ? '99+' : count}</span> : null}
-        </button>
-        <button className={'rail-btn' + (view === 'send' ? ' active' : '')} onClick={() => onView('send')}>
-          <Cloud size={19} /><span className="lab">전송</span>
         </button>
         <button className="rail-btn" disabled title="준비 중">
           <Stack size={19} /><span className="lab">MCP</span>

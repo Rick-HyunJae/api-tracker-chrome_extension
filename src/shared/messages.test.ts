@@ -38,7 +38,6 @@ describe('message constants', () => {
   it('SendCurrentSessionMessage and DeleteCallMessage are constructable', () => {
     const sendCur: SendCurrentSessionMessage = {
       type: MSG.SEND_CURRENT_SESSION,
-      name: '내 세션',
       callIds: ['c1', 'c2'],
     }
     const del: DeleteCallMessage = { type: MSG.DELETE_CALL, callId: 'c1' }

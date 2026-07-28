@@ -10,10 +10,8 @@ import { Rail } from './Rail'
 import type { RailView } from './Rail'
 import { ListView } from './ListView'
 import { DetailView } from './DetailView'
-import { SendView } from './SendView'
 import { SettingsView } from './SettingsView'
 import { Check, X } from './icons'
-import { hostOf } from './view-utils'
 import '../theme/components.css'
 
 type View = RailView | 'detail'
@@ -26,7 +24,6 @@ export function Panel(): React.ReactElement {
   const [query, setQuery] = useState('')
   const [sending, setSending] = useState(false)
   const [excludedIds, setExcludedIds] = useState<Set<string>>(new Set())
-  const [sessionName, setSessionName] = useState('')
   const [freshId, setFreshId] = useState<string | null>(null)
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null)
   const prevIds = useRef<Set<string>>(new Set())
@@ -62,8 +59,6 @@ export function Panel(): React.ReactElement {
   const calls: ApiCall[] = session?.calls ?? []
   const selected = calls.find((c) => c.id === selectedId) ?? null
   const selectedCalls = calls.filter((c) => !excludedIds.has(c.id))
-  const now = new Date()
-  const namePlaceholder = `${hostOf(session?.url ?? '') || '세션'} · ${now.getMonth() + 1}/${now.getDate()} 세션`
 
   const onToggleTracking = (): void => {
     void chrome.runtime.sendMessage({ type: MSG.TOGGLE_TRACKING, enabled: !settings.trackingEnabled })
@@ -108,15 +103,21 @@ export function Panel(): React.ReactElement {
     const n = selectedCalls.length
     void (chrome.runtime.sendMessage({
       type: MSG.SEND_CURRENT_SESSION,
-      name: sessionName.trim() || undefined,
       callIds: selectedCalls.map((c) => c.id),
     }) as Promise<SendSessionResponse>)
       .then((res) => {
-        flash(res?.ok ? `${n}건을 서버로 전송했습니다` : `전송 실패: ${res?.error ?? '알 수 없는 오류'}`, !!res?.ok)
-        if (res?.ok) {
-          setExcludedIds(new Set()) // 전송 후 잔류분은 전량 선택 상태로 초기화
-          setSessionName('')
-        }
+        const error = res?.error ?? '알 수 없는 오류'
+        flash(
+          res?.ok
+            ? `${n}건을 서버로 전송했습니다`
+            // 'no calls selected'는 splitAndArchive가 아무것도 아카이브하지 않은 short-circuit이므로
+            // 보관됨 문구를 붙이면 사실과 다르다.
+            : res?.error === 'no calls selected'
+              ? `전송 실패: ${error}`
+              : `전송 실패 — ${n}건은 히스토리에 보관됨: ${error}`,
+          !!res?.ok,
+        )
+        if (res?.ok) setExcludedIds(new Set()) // 전송 후 잔류분은 전량 선택 상태로 초기화
       })
       .finally(() => setSending(false))
   }
@@ -130,18 +131,6 @@ export function Panel(): React.ReactElement {
     content = <DetailView call={selected} onBack={() => setView('list')} />
   } else if (view === 'settings') {
     content = <SettingsView settings={settings} onChange={onChangeSettings} />
-  } else if (view === 'send') {
-    content = (
-      <SendView
-        calls={selectedCalls}
-        settings={settings}
-        sending={sending}
-        name={sessionName}
-        namePlaceholder={namePlaceholder}
-        onName={setSessionName}
-        onSend={onSend}
-      />
-    )
   } else {
     content = (
       <ListView
@@ -151,7 +140,8 @@ export function Panel(): React.ReactElement {
         freshId={freshId}
         sending={sending}
         excludedIds={excludedIds}
-        selectedCount={selectedCalls.length}
+        selectedCalls={selectedCalls}
+        settings={settings}
         onToggleTracking={onToggleTracking}
         onSearch={setQuery}
         onSelect={onSelect}
@@ -159,7 +149,7 @@ export function Panel(): React.ReactElement {
         onToggleAll={onToggleAll}
         onDelete={onDelete}
         onClear={onClear}
-        onGoSend={() => setView('send')}
+        onSend={onSend}
         onClose={() => window.close()}
       />
     )

@@ -62,9 +62,6 @@ export const Back = (p: IcProps): React.ReactElement => (
 export const Search = (p: IcProps): React.ReactElement => (
   <Svg {...p}><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></Svg>
 )
-export const Cloud = (p: IcProps): React.ReactElement => (
-  <Svg {...p}><path d="M7 18a4 4 0 0 1-.5-7.97A5.5 5.5 0 0 1 17 9.5a3.5 3.5 0 0 1 0 8.5H7z" /></Svg>
-)
 export const Clock = (p: IcProps): React.ReactElement => (
   <Svg {...p}><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></Svg>
 )

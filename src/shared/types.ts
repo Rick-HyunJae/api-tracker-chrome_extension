@@ -14,6 +14,7 @@ export interface ApiCall {
 export interface Settings {
   serverUrl: string
   apiKey: string
+  sessionName: string // 전송 시 payload.name으로 가공 없이 전달 — 빈 문자열이면 필드 생략
   trackingEnabled: boolean
   blacklistedDomains: string[]
   domainWhitelist: string[]
@@ -64,6 +65,7 @@ export interface StorageSchema {
 export const DEFAULT_SETTINGS: Settings = {
   serverUrl: '',
   apiKey: '',
+  sessionName: '',
   trackingEnabled: true,
   blacklistedDomains: [],
   domainWhitelist: [],

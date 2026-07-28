@@ -30,7 +30,7 @@ src/
 ├─ content/      # 콘텐츠 스크립트: injected-capture(fetch·XHR 패치), content-bridge, widget-host
 ├─ shared/       # types·messages·storage(chrome.storage.local)·domain-match 등 공유 모듈
 ├─ ui/
-│  ├─ sidepanel/ # 사이드패널: Rail + List/Detail/Send/Settings 뷰, view-utils, icons
+│  ├─ sidepanel/ # 사이드패널: Rail + List/Detail/Settings 뷰, view-utils, icons
 │  ├─ widget/    # 페이지 위 플로팅 위젯 (shadow DOM, dock-position)
 │  ├─ theme/     # 디자인 토큰(tokens.css)·폰트(fonts.css)·패널 스타일(components.css)
 │  └─ consent/   # 동의 배너 (현재 dormant — MVP에서 게이트 제거됨)
@@ -41,7 +41,7 @@ src/
 
 **캡처 파이프라인**: `content/injected-capture`(페이지 메인월드에서 fetch·XHR 패치, 캡처 시점 URL 절대화) → `content/content-bridge`(postMessage→runtime 전달) → `background/index`(handleMessage) → `background/session-manager`(appendCall, 캡처 필터) → `shared/storage`(chrome.storage.local) → 사이드패널·위젯이 `onStorageChanged`로 구독.
 
-**전송 파이프라인(체리픽)**: 사이드패널 List에서 체크박스로 전송 대상 선택 → `SEND_CURRENT_SESSION { name?, callIds }` → `session-manager.splitAndArchive`(선택분만 `pending` 아카이브, 미선택분은 새 세션에 잔류) → `sender.sendSession`(페이로드에 `name` 포함) → 성공 시 `sent`+`mcpList` 병합 / 실패 시 `failed`. 기존 `SEND_SESSION`은 아카이브 세션 전용(향후 히스토리 뷰 재전송용).
+**전송 파이프라인(체리픽)**: 사이드패널 List(수집 탭)에서 체크박스로 전송 대상 선택 → 푸터의 전송 버튼이 곧바로 전송 → `SEND_CURRENT_SESSION { callIds }` (세션 이름은 UI가 싣지 않고, 백그라운드가 전송 시점에 `settings.sessionName`을 읽어 채운다) → `session-manager.splitAndArchive`(선택분만 `pending` 아카이브, 미선택분은 새 세션에 잔류) → `sender.sendSession`(페이로드에 `name` 포함) → 성공 시 `sent`+`mcpList` 병합 / 실패 시 `failed`. 기존 `SEND_SESSION`은 아카이브 세션 전용(향후 히스토리 뷰 재전송용).
 
 ## Key Info
 
@@ -49,7 +49,8 @@ src/
 - 타입체크 `npx tsc --noEmit`가 사실상의 게이트. **ESLint 설정 파일이 없으므로** lint는 tsc로 갈음한다(`.eslintrc` 없음)
 - 설정은 `shared/storage`의 헬퍼로 직접 영속 → 서비스 워커가 캡처 시 읽어 필터 적용(별도 메시지 없음)
 - **상태 변경 불변식**: `settings`를 제외한 모든 `currentSession`/`sessions` 변경(캡처·전송·개별/전체 삭제)은 반드시 백그라운드 메시지(write-lock 큐) 경유. 패널에서 `patchStorage`로 직접 쓰면 진행 중 전송의 늦은 쓰기와 lost-update 레이스가 생긴다 (`CLEAR_SESSION` 도입 배경)
-- 사용자용 사용 가이드는 `docs/handoff/2026-07-28-extension-usage.md` (스크린샷 포함)
+- 사용자용 사용 가이드는 `docs/handoff/2026-07-28-extension-usage.md` (스크린샷 포함), 빌드·자동 테스트·E2E 검증 절차는 `docs/test/e2e_test.md`
+- **UI에 없는 설정**: `blacklistedDomains`는 스키마와 `widget-host`에만 살아 있고 SettingsView에 노출되지 않는다. 화이트리스트는 캡처만 막고(위젯은 뜸), 블랙리스트는 위젯 마운트·스크립트 주입 자체를 막는다
 
 ## Superpowers
 

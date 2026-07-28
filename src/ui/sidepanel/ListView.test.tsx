@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ListView } from './ListView'
+import { DEFAULT_SETTINGS } from '../../shared/types'
 import type { ApiCall } from '../../shared/types'
 
 const call = (over: Partial<ApiCall> = {}): ApiCall => ({
@@ -11,10 +12,11 @@ const call = (over: Partial<ApiCall> = {}): ApiCall => ({
 
 const base = {
   tracking: true, query: '', freshId: null, sending: false,
-  excludedIds: new Set<string>(), selectedCount: 1,
+  excludedIds: new Set<string>(), selectedCalls: [call()],
+  settings: { ...DEFAULT_SETTINGS, serverUrl: 'http://localhost:4599' },
   onToggleTracking: vi.fn(), onSearch: vi.fn(), onSelect: vi.fn(),
   onToggleExclude: vi.fn(), onToggleAll: vi.fn(), onDelete: vi.fn(),
-  onClear: vi.fn(), onGoSend: vi.fn(), onClose: vi.fn(),
+  onClear: vi.fn(), onSend: vi.fn(), onClose: vi.fn(),
 }
 
 describe('ListView', () => {
@@ -56,7 +58,7 @@ describe('ListView', () => {
   })
 
   it('renders the checkbox unchecked when the call is excluded', () => {
-    render(<ListView {...base} calls={[call()]} excludedIds={new Set(['c1'])} selectedCount={0} />)
+    render(<ListView {...base} calls={[call()]} excludedIds={new Set(['c1'])} selectedCalls={[]} />)
     expect(screen.getByRole('checkbox', { name: '전송 대상' })).not.toBeChecked()
   })
 
@@ -81,11 +83,14 @@ describe('ListView', () => {
     expect(onDelete).toHaveBeenCalledWith('c1')
   })
 
-  it('footer send button shows the selected count and disables at zero', () => {
-    const { rerender } = render(<ListView {...base} calls={[call()]} selectedCount={1} />)
+  it('footer send button shows the selected count, fires onSend, and disables at zero', () => {
+    const onSend = vi.fn()
+    const { rerender } = render(<ListView {...base} calls={[call()]} selectedCalls={[call()]} onSend={onSend} />)
     // '1' 은 recbar 의 수집 건수(<b>)와도 우연히 겹치므로 pill 로 범위를 좁힌다
     expect(screen.getByText('1', { selector: '.pill' })).toBeInTheDocument()
-    rerender(<ListView {...base} calls={[call()]} selectedCount={0} />)
+    fireEvent.click(screen.getByRole('button', { name: /서버로 전송/ }))
+    expect(onSend).toHaveBeenCalled()
+    rerender(<ListView {...base} calls={[call()]} selectedCalls={[]} onSend={onSend} />)
     expect(screen.getByRole('button', { name: /서버로 전송/ })).toBeDisabled()
   })
 
@@ -97,5 +102,14 @@ describe('ListView', () => {
     for (const btn of screen.getAllByTitle('전체 삭제')) {
       expect(btn).toBeDisabled()
     }
+    const footerSend = screen.getByRole('button', { name: '전송 중…' })
+    expect(footerSend).toBeDisabled()
+    expect(footerSend).toHaveTextContent('전송 중…')
+  })
+
+  it('renders the summary bar with the selected count and target host', () => {
+    render(<ListView {...base} calls={[call(), call({ id: 'c2' })]} selectedCalls={[call()]} />)
+    expect(screen.getByText(/1\/2건/)).toBeInTheDocument()
+    expect(screen.getByText(/localhost:4599/)).toBeInTheDocument()
   })
 })

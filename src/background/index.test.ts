@@ -238,6 +238,7 @@ describe('background message router', () => {
   it('SEND_CURRENT_SESSION archives selected calls, sends them, keeps the rest', async () => {
     const state: StorageSchema = {
       ...DEFAULT_STORAGE,
+      settings: { ...DEFAULT_STORAGE.settings, sessionName: '내 세션' },
       currentSession: {
         sessionId: 'cur', url: 'https://x/a', startedAt: 1,
         calls: [makeCall('a'), makeCall('b'), makeCall('c')], status: 'recording',
@@ -246,12 +247,12 @@ describe('background message router', () => {
     const sendImpl = vi.fn().mockResolvedValue({ ok: true, mcpServers: [] })
     const next = await handleMessage(
       state,
-      { type: MSG.SEND_CURRENT_SESSION, name: '내 세션', callIds: ['a', 'c'] },
+      { type: MSG.SEND_CURRENT_SESSION, callIds: ['a', 'c'] },
       'https://x/a',
       { ...ctx, sendSession: sendImpl },
     )
     expect(sendImpl).toHaveBeenCalledOnce()
-    // sender가 받은 세션은 선택분만 + 이름 포함
+    // sender가 받은 세션은 선택분만 + 설정의 이름 포함
     const sentSession = sendImpl.mock.calls[0][1]
     expect(sentSession.calls.map((c: ApiCall) => c.id)).toEqual(['a', 'c'])
     expect(sentSession.name).toBe('내 세션')
@@ -261,6 +262,46 @@ describe('background message router', () => {
     expect(next.state.currentSession!.calls.map((c) => c.id)).toEqual(['b'])
     expect(next.state.currentSession!.sessionId).not.toBe('cur')
     expect(next.response).toEqual({ ok: true })
+  })
+
+  it('SEND_CURRENT_SESSION passes the configured session name through unchanged', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      settings: { ...DEFAULT_STORAGE.settings, sessionName: '주문 API' },
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a')], status: 'recording',
+      },
+    }
+    const sendImpl = vi.fn().mockResolvedValue({ ok: true, mcpServers: [] })
+    await handleMessage(
+      state,
+      { type: MSG.SEND_CURRENT_SESSION, callIds: ['a'] },
+      'https://x/a',
+      { ...ctx, sendSession: sendImpl },
+    )
+    // prefix/suffix 없이 그대로 — 서버 측 군집이 목적
+    expect(sendImpl.mock.calls[0][1].name).toBe('주문 API')
+  })
+
+  it('SEND_CURRENT_SESSION omits the name when the setting is blank', async () => {
+    const state: StorageSchema = {
+      ...DEFAULT_STORAGE,
+      settings: { ...DEFAULT_STORAGE.settings, sessionName: '   ' },
+      currentSession: {
+        sessionId: 'cur', url: 'https://x/a', startedAt: 1,
+        calls: [makeCall('a')], status: 'recording',
+      },
+    }
+    const sendImpl = vi.fn().mockResolvedValue({ ok: true, mcpServers: [] })
+    await handleMessage(
+      state,
+      { type: MSG.SEND_CURRENT_SESSION, callIds: ['a'] },
+      'https://x/a',
+      { ...ctx, sendSession: sendImpl },
+    )
+    expect(sendImpl.mock.calls[0][1].name).toBeUndefined()
+    expect('name' in sendImpl.mock.calls[0][1]).toBe(false)
   })
 
   it('SEND_CURRENT_SESSION marks the archived session failed on sender failure', async () => {

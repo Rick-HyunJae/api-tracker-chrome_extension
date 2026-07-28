@@ -139,9 +139,11 @@ export async function handleMessage(
       return sendArchivedAt(state, idx, ctx)
     }
     case MSG.SEND_CURRENT_SESSION: {
-      // Cherry-pick manual send: archive ONLY the selected calls (with the
-      // user-given name), keep the rest in a fresh current session, then send.
-      const split = splitAndArchive(state, msg.callIds, msg.name, ctx.now())
+      // Cherry-pick manual send: archive ONLY the selected calls, keep the rest
+      // in a fresh current session, then send. 세션 이름은 UI가 실어 보내지 않고
+      // 전송 시점의 settings에서 직접 읽는다 — 값의 출처를 하나로 유지한다.
+      const name = state.settings.sessionName.trim() || undefined
+      const split = splitAndArchive(state, msg.callIds, name, ctx.now())
       if (split === state) return { state, response: { ok: false, error: 'no calls selected' } }
       return sendArchivedAt(split, split.sessions.length - 1, ctx)
     }

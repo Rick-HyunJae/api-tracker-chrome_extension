@@ -11,24 +11,27 @@
 ## Features
 
 - **자동 캡처 (Auto-capture)** — 페이지의 `fetch`와 `XHR`를 메인 월드에서 패치해, 추적이 켜져 있으면 페이지 로드 즉시 모든 API 호출을 기록합니다.
-- **Floating Widget** — 페이지 우하단에 떠 있는 위젯(Shadow DOM 격리). 추적 중일 때 파란색으로 표시되고, 캡처된 호출 수를 배지로 보여줍니다. 클릭하면 사이드패널을 엽니다.
-- **SidePanel** — Chrome 사이드패널 기반 UI. 네 개의 뷰로 구성됩니다.
+- **Floating Widget** — 페이지 **우측 가장자리에 도킹**되는 위젯(Shadow DOM 격리). 절반만 노출된 상태로 붙어 있다가 마우스를 올리면 슬라이드아웃되어 **추적 중지/시작** 칩과 **패널 열기** 버튼이 나타납니다. 배지는 캡처된 호출 수이고, 세로로 드래그해 위치를 옮길 수 있습니다(위치는 영속).
+- **SidePanel** — Chrome 사이드패널 기반 UI. 세 개의 뷰로 구성됩니다.
   - `List` — 캡처된 호출 목록 (method/status/duration, 검색·실시간 하이라이트).
-    행별 **체크박스로 전송 대상을 선택**(기본 전체 선택, 전체 선택/해제 바)하고,
+    행별 **체크박스로 전송 대상을 선택**(기본 전체 선택)하고,
     행 hover/포커스 시 **개별 삭제** 버튼이 나타납니다. 전체 삭제도 지원.
+    상단의 **접이식 요약 카드**가 전체 선택 토글을 흡수해 접힌 상태로 `N/M건 · X.XKB · host`를 보여주고,
+    펼치면 메서드 분포·세션 이름·전송 대상을 확인할 수 있습니다. 하단의 **전송 버튼**이 선택된 호출을 곧바로 서버로 전송합니다.
   - `Detail` — 선택한 호출의 요청/응답 상세 (헤더·바디, 본문/URL/cURL 복사 버튼)
-  - `Send` — **세션 이름을 지정**(선택사항)하고 체크된 호출만 서버로 전송 (`선택 N건 전송`).
-    요약 카드(건수·페이로드·메서드 분포)는 선택분 기준으로 표시됩니다.
-  - `Settings` — 서버 URL/API Key, 캡처 옵션 설정 (입력 즉시 자동 저장)
+  - `Settings` — 서버 URL/API Key, **세션 이름**, 캡처 옵션 설정 (입력 즉시 자동 저장)
 - **세션 모델 (Session)** — 캡처는 하나의 세션에 누적됩니다. URL이 바뀌어도(SPA 이동·전체 페이지 이동) 세션은 끊기지 않으며, **30분 idle 타임아웃**, 추적 토글, 그리고 **수동 전송**으로 세션 경계가 결정됩니다. idle이 지나면 세션은 히스토리로 회전(rotate)되어 `pending` 상태로 보관됩니다.
 - **체리픽 전송 (Cherry-pick send)** — List에서 체크한 호출만 이름과 함께 전송·아카이브되고, **체크 해제한 호출은 새 세션에 그대로 남아** 이어서 수집·전송할 수 있습니다.
 - **캡처 필터 (Capture filters)** — 설정으로 캡처 대상을 정밀 제어합니다.
-  - `domainWhitelist` / `blacklistedDomains` — 도메인 화이트리스트·블랙리스트
+  - `domainWhitelist` — 도메인 화이트리스트. 비우면 전체 캡처, 값이 있으면 매칭 호스트만 캡처(포트 제외한 hostname 기준)
+  - `blacklistedDomains` — 도메인 블랙리스트. **설정 UI에는 노출되지 않습니다** — 스키마와 `widget-host`에만 살아 있어 현재는 storage를 직접 수정해야 동작합니다. 걸리면 위젯 자체가 마운트되지 않고 캡처 스크립트도 주입되지 않습니다(화이트리스트는 캡처만 막고 위젯은 그대로 뜹니다)
   - `captureMethods` — 기록할 HTTP 메서드 (기본 GET/POST/PUT/PATCH/DELETE)
   - `saveBody` — 응답 바디 저장 여부
   - `dedupe` — 중복 호출 제거
   - `autoSend` — 캡처 즉시 자동 전송
-- **자동/수동 전송 (Send)** — 세션을 백엔드로 전송하면(`POST {serverUrl}/api/sessions`, 페이로드에 `name` 포함) 응답으로 받은 MCP 서버 목록이 `mcpList`에 병합됩니다. 전송 실패한 세션은 `failed`로 보관됩니다(재전송 UI는 히스토리 뷰와 함께 예정).
+- **자동/수동 전송 (Send)** — 세션을 백엔드로 전송하면(`POST {serverUrl}/api/sessions`) 응답으로 받은 MCP 서버 목록이 `mcpList`에 병합됩니다. 전송 실패한 세션은 `failed`로 보관됩니다(재전송 UI는 히스토리 뷰와 함께 예정).
+  - 페이로드는 `{ sessionId, name?, url, startedAt, endedAt, calls }`. `name`은 설정값이 가공 없이 실리고, 비어 있으면 필드가 생략됩니다.
+  - `calls`의 각 항목에는 `ApiCall`에 없는 **`pageUrl`**(캡처 시점 페이지 URL)이 함께 실립니다 — 서버가 스키마를 엄격히 검증한다면 허용하거나 무시해야 합니다.
 - **복원력 (Resilience)** — 모든 상태는 `chrome.storage.local`에 영속됩니다. 서비스 워커가 재시작돼도 `currentSession`이 복구되고, 동시 캡처로 인한 쓰기 경쟁은 write-lock으로 직렬화됩니다.
 
 ---
@@ -83,7 +86,7 @@ protocol-k/
    │  ├─ storage.ts          # chrome.storage.local 헬퍼 · onStorageChanged
    │  └─ domain-match.ts     # 도메인 화이트/블랙리스트 매칭
    ├─ ui/
-   │  ├─ sidepanel/          # Rail + List/Detail/Send/Settings 뷰
+   │  ├─ sidepanel/          # Rail + List/Detail/Settings 뷰
    │  ├─ widget/             # FloatingWidget · dock-position
    │  ├─ theme/              # tokens.css · fonts.css · components.css
    │  └─ consent/            # 동의 배너 (현재 dormant — MVP에서 게이트 제거)
@@ -138,14 +141,16 @@ npx tsc --noEmit                          # 타입체크 (build에 포함)
 
 자동화 테스트(Vitest)로 커버되지 않는 확장 동작은 아래 시나리오로 직접 확인합니다.
 
-1. Settings 탭에서 `serverUrl`과 `apiKey`를 입력하고 **저장**을 누른다.
-2. `fetch`/`XHR`를 호출하는 사이트(예: SPA)를 연다. 우하단에 **파란색(추적 중)** 플로팅 위젯이 뜨는지 확인한다.
+1. Settings 탭에서 `serverUrl`과 `apiKey`를 입력한다. **저장 버튼은 없다** — 입력 즉시 `chrome.storage.local`에 반영된다. 세션 이름을 쓸 거면 여기서 함께 지정한다.
+2. `fetch`/`XHR`를 호출하는 사이트(예: SPA)를 연다. **우측 가장자리**에 플로팅 위젯이 도킹되는지, 마우스를 올리면 슬라이드아웃되어 추적 칩과 패널 열기 버튼이 나타나는지 확인한다.
    > MVP에는 별도 동의 단계가 없습니다. `trackingEnabled`(기본 ON)이면 페이지 로드 즉시 캡처가 시작됩니다.
 3. API 호출을 발생시킨다. 위젯의 배지 카운트가 증가하는지 확인한다.
 4. 위젯 → **패널 열기**를 누른다. 사이드패널 `List`에 method/status/duration이 표시되는지, 행을 누르면 `Detail`에서 응답 바디가 펼쳐지는지 확인한다.
-5. `List`에서 일부 호출의 체크를 해제하고 **전송** 탭으로 이동한다. 세션 이름을 입력하고 **선택 N건 전송**을 누른다. 성공 토스트가 뜨고, 체크했던 호출만 이름과 함께 서버로 전송되며, 체크 해제한 호출은 List에 그대로 남는지 확인한다.
+5. `List`에서 일부 호출의 체크를 해제하고 하단의 **서버로 전송** 버튼을 누른다(세션 이름은 미리 `Settings`에서 지정해둔다). 성공 토스트가 뜨고, 체크했던 호출만 이름과 함께 서버로 전송되며, 체크 해제한 호출은 List에 그대로 남는지 확인한다.
 6. SPA 내부에서 이동(pushState)한다. 세션이 끊기지 않고 같은 세션에 계속 누적되는지 확인한다.
-7. Settings에서 현재 도메인을 블랙리스트에 추가하고 새로고침한다. 위젯이 **나타나지 않고** 아무 호출도 캡처되지 않는지 확인한다.
+7. Settings의 **도메인 화이트리스트**에 현재 도메인이 아닌 값(예: `example.com`)을 넣는다. 위젯과 배지는 그대로지만 새 호출이 더 이상 목록에 쌓이지 않는지 확인한다. 화이트리스트는 포트를 제외한 hostname으로 매칭하므로, `localhost`를 넣으면 `localhost:3000`도 통과한다.
+   > 위젯 자체를 숨기는 블랙리스트는 설정 UI에 없다. 확인하려면 storage에 직접 써야 한다:
+   > `chrome.storage.local.get('settings', v => chrome.storage.local.set({settings: {...v.settings, blacklistedDomains: ['example.com']}}))`
 8. 30분 이상 API 호출을 멈춘다(또는 idle alarm 트리거). 세션이 히스토리로 회전해 `pending` 상태가 되는지 확인한다.
 9. 전송 실패를 유도(서버 중지 후 전송)한다. 실패 토스트(X 아이콘)가 뜨고 세션이 `failed`로 보관되는지 확인한다. (재전송 UI는 히스토리 뷰와 함께 예정 — storage의 `sessions[].transmitStatus`로 확인)
 10. 서비스 워커를 reload 한다(`chrome://extensions` → reload). `currentSession`이 storage에서 복구되는지 확인한다.
