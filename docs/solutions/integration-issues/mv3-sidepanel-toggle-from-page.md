@@ -4,7 +4,7 @@ date: 2026-06-01
 category: integration-issues
 module: src/background, src/ui/sidepanel
 problem_type: integration_issue
-component: tooling
+component: service_worker
 symptoms:
   - "Clicking the floating widget button opens the side panel but a second click does not close it"
   - "chrome.sidePanel.open() throws \"must be called in response to a user gesture\" when invoked from the SW message handler"

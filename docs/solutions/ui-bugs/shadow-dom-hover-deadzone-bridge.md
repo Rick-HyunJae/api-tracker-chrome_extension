@@ -4,7 +4,7 @@ date: 2026-06-01
 category: ui-bugs
 module: src/ui/widget
 problem_type: ui_bug
-component: react_component
+component: floating_widget
 symptoms:
   - "Hover-reveal widget collapses when the cursor moves from the main button to a sub-chip"
   - "Sub-chips appear and immediately disappear, making them unclickable"

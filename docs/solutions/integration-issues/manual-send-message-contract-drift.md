@@ -4,7 +4,7 @@ date: 2026-07-28
 category: integration-issues
 module: src/ui/sidepanel (onSend), src/background (handleMessage SEND_SESSION)
 problem_type: integration_issue
-component: tooling
+component: side_panel
 symptoms:
   - "Send 뷰에서 'N건 전송' 클릭 시 항상 토스트 '전송 실패: session not found'"
   - "sender·핸들러 유닛 테스트는 전부 통과 — 실패 경로가 테스트에 잡히지 않음"

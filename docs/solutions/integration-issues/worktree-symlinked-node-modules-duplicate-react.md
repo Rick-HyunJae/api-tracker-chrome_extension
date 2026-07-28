@@ -4,14 +4,14 @@ date: 2026-06-01
 category: integration-issues
 module: tooling
 problem_type: integration_issue
-component: build_tooling
+component: development_workflow
 symptoms:
   - "~22 component render tests fail (ConsentBanner, McpTable, SessionHistory, CaptureList, FloatingWidget…)"
   - "Pure-logic tests (types, messages, storage) all pass"
   - "Invalid hook call or hooks-related errors in the Vitest output"
   - "Tests pass on the main checkout but fail only in the worktree"
 root_cause: duplicate_dependency
-resolution_type: environment_fix
+resolution_type: environment_setup
 severity: high
 related_components:
   - git_worktrees

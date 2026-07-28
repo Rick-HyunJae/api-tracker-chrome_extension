@@ -6,7 +6,7 @@ Choose the template matching the problem_type track (see `references/schema.yaml
 
 ## Bug Track Template
 
-Use for: `build_error`, `test_failure`, `runtime_error`, `performance_issue`, `database_issue`, `security_issue`, `ui_bug`, `integration_issue`, `logic_error`
+Use for: `build_error`, `test_failure`, `runtime_error`, `performance_issue`, `security_issue`, `ui_bug`, `integration_issue`, `logic_error`
 
 <!-- YAML safety: array items (symptoms, applies_when, tags, related_components) starting with ` [ * & ! | > % @ ? or containing ": " must be wrapped in double quotes. See references/yaml-schema.md > "YAML Safety Rules". -->
 
@@ -54,7 +54,7 @@ tags: [keyword-one, keyword-two]
 
 ## Knowledge Track Template
 
-Use for: `best_practice`, `documentation_gap`, `workflow_issue`, `developer_experience`
+Use for: `best_practice`, `documentation_gap`, `workflow_issue`, `developer_experience`, `architecture_pattern`, `design_pattern`, `tooling_decision`, `convention`
 
 <!-- YAML safety: array items (symptoms, applies_when, tags, related_components) starting with ` [ * & ! | > % @ ? or containing ": " must be wrapped in double quotes. See references/yaml-schema.md > "YAML Safety Rules". -->
 

@@ -4,14 +4,14 @@ date: 2026-06-01
 category: testing
 module: src/ui/widget
 problem_type: test_failure
-component: react_component
+component: testing_framework
 symptoms:
   - "fireEvent.pointerDown/pointerMove with clientY does not move the dragged element"
   - "The drag handler receives undefined for clientX, clientY, and pointerId"
   - "Tests assert no position change even though the production component works correctly"
   - "Switching to fireEvent.mouseMove does not fix the test (component listens on pointer events)"
 root_cause: environment_gap
-resolution_type: polyfill
+resolution_type: test_fix
 severity: medium
 related_components:
   - jsdom

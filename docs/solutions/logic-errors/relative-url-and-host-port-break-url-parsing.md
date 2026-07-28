@@ -4,7 +4,7 @@ date: 2026-07-28
 category: logic-errors
 module: src/content/injected-capture, src/background/session-manager, src/ui/sidepanel
 problem_type: logic_error
-component: tooling
+component: injected_capture
 symptoms:
   - "화이트리스트 설정 시 같은 사이트의 fetch('/api/x') 호출이 전부 드롭됨"
   - "화이트리스트에 'localhost'를 넣어도 localhost:8787 페이지의 호출이 드롭됨"

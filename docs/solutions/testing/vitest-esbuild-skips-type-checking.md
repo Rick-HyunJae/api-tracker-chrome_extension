@@ -4,14 +4,14 @@ date: 2026-06-01
 category: testing
 module: src/shared
 problem_type: test_failure
-component: build_tooling
+component: testing_framework
 symptoms:
   - "Full vitest run passes (114 tests) after adding required fields to a shared interface"
   - "tsc --noEmit reports missing-property errors in files that construct the type"
   - "The affected files are test files and an options component — not the type definition itself"
   - "The discrepancy is only visible when tsc is run separately; no red in the IDE if tsserver is also stale"
 root_cause: toolchain_gap
-resolution_type: process_fix
+resolution_type: workflow_improvement
 severity: high
 related_components:
   - vitest

@@ -4,7 +4,7 @@ date: 2026-06-01
 category: logic-errors
 module: src/background (handleMessage, session-manager)
 problem_type: logic_error
-component: tooling
+component: service_worker
 symptoms:
   - "사이드패널/위젯 캡처 리스트가 SPA 라우팅(pushState/replaceState/popstate) 또는 전체 페이지 이동 직후 빈 상태로 바뀐다"
   - "추적(trackingEnabled)을 켠 채로 URL만 변경했는데 직전까지 쌓인 API 호출들이 화면에서 사라진다"

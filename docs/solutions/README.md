@@ -6,19 +6,24 @@
 
 ## 디렉토리 구조
 
-각 서브디렉토리는 `schema.yaml`의 `problem_type`에 대응합니다:
+각 서브디렉토리는 `schema.yaml`의 `problem_type`에 대응합니다. 아래는 스키마가 정의한 전체
+목록이며, 실제로 문서가 있는 것은 `integration-issues/`, `logic-errors/`, `testing/`,
+`ui-bugs/` 넷입니다. 나머지는 해당 유형의 학습이 생기면 그때 만듭니다.
+
+> **`testing/` 관례** — `test-failures/`는 만들지 않습니다. 테스트 프레임워크 동작, jsdom
+> 환경 격차, E2E 하네스 문제처럼 "코드가 아니라 테스트 환경이 원인"인 건은 `problem_type`이
+> `test_failure`든 `developer_experience`든 모두 `testing/`으로 모읍니다.
 
 | 디렉토리 | problem_type | 트랙 |
 |---|---|---|
 | `build-errors/` | build_error | Bug |
-| `test-failures/` | test_failure | Bug |
 | `runtime-errors/` | runtime_error | Bug |
 | `performance-issues/` | performance_issue | Bug |
 | `security-issues/` | security_issue | Bug |
 | `ui-bugs/` | ui_bug | Bug |
 | `integration-issues/` | integration_issue | Bug |
 | `logic-errors/` | logic_error | Bug |
-| `testing/` | test_failure / environment_gap | Bug / Knowledge |
+| `testing/` | test_failure, developer_experience(테스트 환경) | Bug / Knowledge |
 | `best-practices/` | best_practice | Knowledge |
 | `architecture-patterns/` | architecture_pattern | Knowledge |
 | `design-patterns/` | design_pattern | Knowledge |

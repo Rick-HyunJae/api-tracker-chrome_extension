@@ -1,7 +1,8 @@
 # Documentation schema for learnings written by ce-compound
 # Treat this as the canonical frontmatter contract for docs/solutions/.
 #
-# Project: DOUZONE Data Visualization Editor (TypeScript/React/ProseMirror/TipTap)
+# Project: API-to-MCP Tracker — Chrome MV3 확장 (TypeScript/React/Vite/Vitest)
+#          세 실행 컨텍스트(서비스 워커 / 콘텐츠 스크립트 / UI)로 나뉜다.
 #
 # The schema has two tracks based on problem_type:
 #   Bug track  — problem_type is a defect or failure (build_error, test_failure, etc.)
@@ -39,7 +40,7 @@ tracks:
 required_fields:
   module:
     type: string
-    description: "Module or area affected (e.g. packages/customize/extension-table, context/editorManager)"
+    description: "Module or area affected (e.g. src/background/session-manager, src/ui/sidepanel, vite.config.ts)"
 
   date:
     type: string
@@ -70,22 +71,24 @@ required_fields:
   component:
     type: enum
     values:
-      - prosemirror_core
-      - tiptap_core
-      - tiptap_extension
-      - editor_config
-      - editor_context
-      - media_context
-      - webview_context
-      - react_component
-      - custom_hook
-      - mobile_editor
-      - build_config
-      - development_workflow
-      - testing_framework
+      # --- 실행 컨텍스트 (MV3) ---
+      - service_worker       # src/background/ — handleMessage, session-manager, sender, alarms
+      - content_script       # src/content/ — content-bridge, widget-host
+      - injected_capture     # src/content/injected-capture — 페이지 메인월드 fetch·XHR 패치
+      # --- UI ---
+      - side_panel           # src/ui/sidepanel/ — Rail, ListView, SummaryBar, DetailView, SettingsView
+      - floating_widget      # src/ui/widget/ — FloatingWidget, dock-position (shadow DOM)
+      - theme                # src/ui/theme/ — tokens.css, components.css, fonts
+      # --- 공유·설정 ---
+      - shared_module        # src/shared/ — types, messages, storage, domain-match
+      - manifest             # manifest.json — 권한, CSP, web_accessible_resources, 사이드패널 등록
+      - build_config         # vite.config.ts, tsconfig.json, @crxjs
+      # --- 개발 인프라 ---
+      - testing_framework    # Vitest, Testing Library, jsdom, E2E 하네스(agent-browser·CDP)
+      - development_workflow # git worktree, 브랜치·통합 규약, 스킬 워크플로
       - documentation
-      - tooling
-    description: "Primary component involved"
+      - tooling              # 위 어디에도 맞지 않는 도구 (fallback — 먼저 위 값들을 검토할 것)
+    description: "Primary component involved. 가장 좁게 맞는 값을 고른다. 여러 컨텍스트가 얽히면 문제가 '발생한' 곳을 component로 두고 나머지는 related_components에 적는다."
 
   severity:
     type: enum
@@ -125,6 +128,9 @@ track_rules:
           - inadequate_documentation
           - missing_tooling
           - incomplete_setup
+          - duplicate_dependency  # 같은 패키지가 두 인스턴스로 로드 (예: React 이중 인스턴스)
+          - environment_gap       # 테스트 런타임이 실제 브라우저와 다름 (예: jsdom 미구현 API)
+          - toolchain_gap         # 도구가 특정 검증을 수행하지 않음 (예: esbuild는 타입 검사 생략)
         description: "Fundamental technical cause of the problem"
       resolution_type:
         type: enum
@@ -170,6 +176,9 @@ track_rules:
           - inadequate_documentation
           - missing_tooling
           - incomplete_setup
+          - duplicate_dependency  # 같은 패키지가 두 인스턴스로 로드 (예: React 이중 인스턴스)
+          - environment_gap       # 테스트 런타임이 실제 브라우저와 다름 (예: jsdom 미구현 API)
+          - toolchain_gap         # 도구가 특정 검증을 수행하지 않음 (예: esbuild는 타입 검사 생략)
         description: "Underlying cause, if there is a specific one (optional for knowledge track)"
       resolution_type:
         type: enum
