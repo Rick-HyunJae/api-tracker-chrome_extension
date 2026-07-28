@@ -104,7 +104,9 @@ Serena find_symbol              # 의심 함수 위치
 
 **작업 완료 시**: 메모리 변경이 있었다면 `serena memories check`로 참조 무결성 점검.
 
-**저장소 정책**: `.serena/`는 `.gitignore` 처리되어 메모리는 팀 비공유. 새 환경에서는 `mcp__serena__onboarding`을 1회 실행해야 한다.
+**저장소 정책**: `.serena/`의 `project.yml`과 `memories/`는 **버전 관리 대상**(팀 공유)이다. Serena 자체 `.serena/.gitignore`가 `cache/`와 `project.local.yml`(로컬 override 전용)만 제외한다. 루트 `.gitignore`에 `.serena/`를 다시 추가하지 말 것 — 그러면 중첩 규칙이 무력화되어 메모리가 공유되지 않고, 새 환경마다 `mcp__serena__onboarding`을 다시 돌려야 한다.
+
+메모리가 비어 있는 새 환경에서만 `mcp__serena__onboarding`을 1회 실행한다. 이미 `mem:core`가 있으면 실행하지 않고 읽는 것으로 시작한다.
 
 ## 7. 운영 명령 요약
 
