@@ -6,6 +6,7 @@ coverage/
 .DS_Store
 .claude/settings.local.json
 .worktrees/
+.claude/worktrees/
 .serena/
 .playwright-mcp/
 dist.zip
